@@ -1,0 +1,966 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>動態能力與組織學習：互動學習</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Merriweather:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script>
+tailwind.config = {
+  darkMode: 'class',
+  theme: { extend: { fontFamily: { sans: ['Inter','sans-serif'], serif: ['Merriweather','serif'] } } }
+}
+</script>
+<style>
+@keyframes fadeInUp { from{opacity:0;transform:translateY(15px)} to{opacity:1;transform:translateY(0)} }
+.animate-fade-in { animation: fadeInUp 0.5s ease-out forwards; }
+.perspective { perspective: 1000px; }
+.transform-style-3d { transform-style: preserve-3d; }
+.backface-hidden { backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+.rotate-y-180 { transform: rotateY(180deg); }
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+.dark ::-webkit-scrollbar-thumb { background: #475569; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useRef } = React;
+
+const dict = {
+  zh: {
+    brand: "DCL",
+    title: "動態能力與組織學習",
+    subtitle: "SMMC · 互動學習系列",
+    nav_modules: "單元目錄", nav_prev: "上一單元", nav_next: "下一單元",
+    key_terms: "關鍵專有名詞", flip_prompt: "點擊翻轉", audio_read: "語音導覽",
+    quiz_title: "模組知識檢定（隨機 4 題）",
+    submit: "提交答案", retry: "重新測驗",
+    score: "得分", correct: "正確", incorrect: "錯誤", explanation: "解析",
+    analytics_title: "學習歷程分析", analytics_desc: "追蹤您的學習進度、互動頻率與測驗表現",
+    analytics_form_title: "填寫學習者資訊",
+    analytics_group: "組別", analytics_dept: "系級",
+    analytics_dept_ph: "例：IBS3", analytics_id: "學號", analytics_id_ph: "例：112212099",
+    analytics_name: "姓名", analytics_name_ph: "例：Jimmy Lo",
+    analytics_export_csv: "匯出 CSV 歷程記錄",
+    analytics_fill_required: "請填寫完整資訊以解鎖匯出",
+    group_options: ["G1","G2","G3","G4","G5","Others"],
+    analytics_total_time: "總學習時間", analytics_total_clicks: "總互動點擊",
+    analytics_overall_acc: "總體測驗答對率",
+    analytics_module: "模組", analytics_time: "停留時間",
+    analytics_clicks: "點擊次數", analytics_acc: "答對率",
+    analytics_correct_ans_total: "答對 / 已填答 / 總題數",
+    analytics_no_data: "尚未測驗", analytics_sec: "秒", analytics_times: "次",
+    date: "Version 2026.03.26", copyright: "For Educational Use Only",
+    architect_label: "Architect:", architect_name: "Prof. Shihmin Lo",
+    architect_url: "https://www.ibs.ncnu.edu.tw/index.php/faculty/tenured-professor/299-smlo",
+
+    // M0
+    m0_nav: "0. 課程總覽",
+    m0_title: "動態能力與組織學習",
+    m0_intro: "本單元探討企業如何在動態環境中維持競爭優勢。從產業生命週期的演化規律出發，深入分析組織慣性與策略變革的張力、Teece 的動態能力框架（感知—捕獲—轉型）、組織學習與知識管理的螺旋、以及組織雙元性的設計挑戰。透過台灣在地微個案，將理論與實務緊密結合。",
+    m0_why: "為什麼動態能力與組織學習重要？",
+    m0_why_desc: "在技術快速變遷、產業邊界模糊化的時代，靜態的資源優勢已不足以保障企業生存。企業必須培養持續感知環境變化、快速調配資源、重塑組織能力的動態能力，並建構學習型組織以將個人知識轉化為組織智慧。從台積電的製程領先到宏碁的微笑曲線轉型，動態能力決定了誰能在變局中勝出。",
+    m0_stats: [
+      { val: "3P", label: "Teece 動態能力框架" },
+      { val: "SECI", label: "野中知識轉化螺旋" },
+      { val: "4 階段", label: "產業生命週期" },
+      { val: "雙元性", label: "探索 vs. 利用" }
+    ],
+    m0_modules: [
+      { num: "01", title: "產業生命週期與演化", desc: "S 曲線、主導設計、技術標準與產業演化的規律" },
+      { num: "02", title: "組織慣性與策略變革", desc: "慣性來源、間斷均衡、組織生態學與演化經濟學" },
+      { num: "03", title: "動態能力", desc: "Teece 的感知—捕獲—轉型框架、核心能耐與互補資產" },
+      { num: "04", title: "組織學習與知識管理", desc: "SECI 模型、學習型組織、探索與利用的平衡" },
+      { num: "05", title: "組織雙元性與設計", desc: "結構性雙元、情境式雙元、組織設計三支柱" }
+    ],
+    m0_start: "開始學習 →",
+
+    // M1
+    m1_nav: "1. 產業生命週期與演化",
+    m1_title: "產業生命週期與演化",
+    m1_p1: "產業並非靜態結構，而是遵循可預測的生命週期模式演化。從萌芽期的技術探索、成長期的規模擴張、成熟期的效率競爭，到衰退期的整合退出——每個階段的關鍵成功因素、競爭態勢與策略重點截然不同。理解產業所處的生命週期階段，是制定適切策略的前提。",
+    m1_p2: "「產業演化遵循 S 曲線模式：技術進步初期緩慢，隨後加速成長，最終趨於飽和。新的 S 曲線取代舊曲線，驅動產業的持續演化。」——Grant",
+    m1_p3: "產業演化的關鍵概念包括：主導設計（Dominant Design）的確立標誌著競爭焦點從產品創新轉向製程創新；技術標準之爭決定了贏家通吃或多標準共存的格局；而需求面的成長曲線（S 曲線）則預示了產能投資的最佳時機。企業必須洞察這些演化規律，在正確的時間做出正確的策略選擇。",
+    m1_cards: [
+      { title: "S 曲線與主導設計", desc: "技術發展遵循 S 曲線：初期進步緩慢（萌芽期），隨後快速加速（成長期），最終趨於平緩（成熟期）。當主導設計確立後，競爭焦點從「做什麼產品」轉向「如何更有效率地生產」，產品創新讓位於製程創新。" },
+      { title: "產業生命週期四階段", desc: "萌芽期（技術競爭、少數先驅）→ 成長期（快速擴張、標準化）→ 成熟期（規模經濟、同質化競爭）→ 衰退期（產能過剩、價格戰、退出整併）。每階段的 KSF（關鍵成功因素）不同，策略須隨之調整。" }
+    ],
+    m1_case_title: "微個案：台灣半導體產業——從萌芽到全球主導的生命週期演化",
+    m1_case: "台灣半導體產業的發展完美詮釋了產業生命週期理論。1970 年代萌芽期，工研院從 RCA 技術移轉開始探索；1987 年台積電成立，開創純代工模式（Foundry Model），確立了主導設計。1990–2000 年代進入高速成長期，聯電、世界先進等跟進，台灣成為全球晶圓代工重鎮。2010 年代步入成熟期，28nm 以上製程商品化，競爭轉向先進製程（FinFET、EUV）的製程創新。台積電憑藉持續的研發投資（每年超過營收 8%）與學習曲線效應，在 7nm、5nm、3nm 節點持續領先，將競爭者（三星、Intel）遠遠拋在後方。這個案例展示了：在產業演化的不同階段，成功的策略焦點從技術探索（萌芽）→ 規模擴張（成長）→ 製程創新與成本效率（成熟）持續轉變。",
+    m1_case_lesson: "啟示：台灣半導體產業的成功印證了產業生命週期理論——在每個演化階段採取與 KSF 一致的策略是關鍵。台積電從代工模式的「主導設計」確立，到成熟期的製程創新領先，展示了動態適應產業演化的典範。",
+    m1_terms: [
+      { front: "S 曲線 S-Curve", back: "描述技術發展或市場成長的典型模式：初期進步緩慢，中期加速成長，後期趨於飽和。新技術的 S 曲線取代舊技術的曲線，推動產業持續演化。" },
+      { front: "主導設計 Dominant Design", back: "產業中獲得市場廣泛接受的產品架構或技術標準。一旦確立，競爭焦點從產品創新轉向製程創新，產業進入大規模生產與成本競爭階段。" },
+      { front: "產業生命週期 Industry Life Cycle", back: "產業從萌芽、成長、成熟到衰退的演化過程。每個階段的需求成長率、競爭態勢、KSF 不同，企業策略須隨產業階段調整。" }
+    ],
+    m1_q: [
+      { q: "S 曲線描述的是什麼現象？", opts: ["企業獲利的線性成長","技術發展初慢、中快、後緩的模式","市場價格的週期波動","員工學習的均勻進步"], ans: 1, exp: "S 曲線描述技術或市場從緩慢起步、加速成長到趨於飽和的典型非線性發展模式。" },
+      { q: "主導設計確立後，產業競爭焦點如何轉變？", opts: ["從製程創新轉向產品創新","從產品創新轉向製程創新","競爭完全消失","轉向純粹價格戰"], ans: 1, exp: "主導設計確立後，產品架構趨同，企業轉向以更高效率生產——製程創新成為關鍵。" },
+      { q: "產業生命週期的成熟期，關鍵成功因素是什麼？", opts: ["技術探索與產品創新","規模經濟與成本效率","品牌建立與市場進入","人才吸引與研發投資"], ans: 1, exp: "成熟期市場飽和、產品同質化，競爭焦點轉向成本效率與規模經濟。" },
+      { q: "台積電確立的「主導設計」是什麼？", opts: ["記憶體晶片","純代工模式（Foundry Model）","垂直整合製造","封裝測試服務"], ans: 1, exp: "台積電開創的純代工模式（不與客戶競爭 IC 設計），成為全球半導體產業的主導商業模式。" },
+      { q: "產業萌芽期的典型特徵是什麼？", opts: ["大量企業激烈價格戰","少數先驅者探索技術，產品創新為主","產能過剩與企業退出","市場規模最大"], ans: 1, exp: "萌芽期由少數技術先驅主導，重點在產品創新與技術可行性驗證，市場規模仍小。" },
+      { q: "新 S 曲線取代舊 S 曲線的現象稱為什麼？", opts: ["主導設計","技術不連續性","市場飽和","產能過剩"], ans: 1, exp: "當新技術的 S 曲線超越舊技術的 S 曲線時，發生技術不連續性（Technological Discontinuity），驅動產業轉型。" },
+      { q: "台積電在成熟期的核心競爭策略是？", opts: ["降價搶市佔","持續投資先進製程的製程創新","轉型 IC 設計","退出代工市場"], ans: 1, exp: "台積電在成熟期持續投入巨額研發（年營收 8%+），以 EUV 等先進製程領先，維持技術護城河。" },
+      { q: "下列何者不是產業生命週期的階段？", opts: ["萌芽期","震盪期","爆發期","衰退期"], ans: 2, exp: "標準產業生命週期為萌芽期、成長期（含震盪期）、成熟期、衰退期；「爆發期」並非標準用語。" }
+    ],
+
+    // M2
+    m2_nav: "2. 組織慣性與策略變革",
+    m2_title: "組織慣性與策略變革",
+    m2_p1: "環境變遷要求企業變革，但組織慣性（Organizational Inertia）往往使企業難以改變。慣性的來源包括：組織慣例（Routines）的路徑依賴、社會政治結構的抵抗、對過往成功模式的從眾效應（Conformity）、有限理性（Bounded Rationality）的認知限制，以及互補性配置（Complementary Configurations）之間的相互鎖定。",
+    m2_p2: "「組織慣性不是缺陷，而是穩定性的來源。但當環境劇變時，昨天的核心能力就成了今天的核心僵固性。」——Leonard-Barton",
+    m2_p3: "間斷均衡（Punctuated Equilibrium）理論描述了組織變革的典型模式：長期的穩定演化被短暫而劇烈的革命性變革所打斷。組織生態學（Organizational Ecology）從族群層面解釋為何個別組織難以適應：選擇（Selection）淘汰不適者，保留（Retention）穩定化有效模式。演化經濟學（Evolutionary Economics）則較為樂觀，強調組織透過慣例的變異、選擇與保留機制，可以在一定程度上實現適應性演化。",
+    m2_cards: [
+      { title: "組織慣性的五大來源", desc: "（1）慣例路徑依賴：既有流程自我強化\n（2）社會政治結構：權力與利益格局抵抗變革\n（3）從眾效應：對過去成功模式的過度依賴\n（4）有限理性：管理者認知偏誤與資訊處理限制\n（5）互補性配置：策略、結構、文化相互鎖定" },
+      { title: "間斷均衡與組織變革模式", desc: "組織不會持續漸進地適應環境，而是在長期穩定期（收斂期）累積微幅調整，直到外部衝擊（技術革命、法規變遷、危機事件）觸發短暫的革命期，徹底重塑策略、結構與權力配置。" }
+    ],
+    m2_case_title: "微個案：HTC——從智慧型手機先驅到市場邊緣的慣性陷阱",
+    m2_case: "HTC 的興衰是組織慣性最生動的教材。2008–2011 年，HTC 是全球智慧型手機的先驅之一，推出全球首款 Android 手機（HTC Dream），市值一度超越 Nokia。然而，HTC 陷入了多重慣性陷阱：（1）慣例路徑依賴——持續沿用「機海戰術」推出大量機型，而非聚焦旗艦產品線；（2）從眾效應——過度依賴早期與電信商合作的成功模式，未及時建立自有品牌零售通路；（3）社會政治結構——研發、設計、行銷部門各自為政，缺乏整合性產品策略；（4）有限理性——高層未能及時辨識 Apple 與 Samsung 在軟硬整合與行銷投資上的根本性威脅。當 Samsung Galaxy S 系列與 iPhone 以軟硬整合、品牌行銷大舉進攻時，HTC 的全球市佔率從 2011 年的 8.8% 暴跌至 2015 年的不足 2%。2017 年，HTC 將部分手機部門出售給 Google，標誌著其智慧型手機輝煌時代的終結。",
+    m2_case_lesson: "啟示：HTC 的案例完美展示了「核心能力變成核心僵固性」——早期的成功模式（機海戰術、電信商合作）在環境劇變後反而成為變革的障礙。當多重慣性來源同時作用時，組織幾乎無法自我革新。",
+    m2_terms: [
+      { front: "組織慣性 Organizational Inertia", back: "組織抵抗變革的傾向。來源包括慣例路徑依賴、社會政治結構、從眾效應、有限理性與互補性配置的相互鎖定，使組織難以適應環境變遷。" },
+      { front: "間斷均衡 Punctuated Equilibrium", back: "組織變革的典型模式：長期的穩定演化（收斂期）被短暫而劇烈的革命性變革所打斷。由 Tushman & Romanelli 引入組織理論，解釋策略變革的非線性特徵。" },
+      { front: "核心僵固性 Core Rigidity", back: "Leonard-Barton 提出：企業的核心能力在環境改變後，可能變成阻礙創新與適應的核心僵固性。過去的成功反而成為未來變革的最大障礙。" }
+    ],
+    m2_q: [
+      { q: "下列何者不是組織慣性的來源？", opts: ["慣例路徑依賴","社會政治結構","動態能力","有限理性"], ans: 2, exp: "動態能力是克服慣性的能力，不是慣性的來源。慣性來源包括慣例路徑依賴、社會政治結構、從眾效應、有限理性與互補性配置。" },
+      { q: "間斷均衡理論的核心主張是什麼？", opts: ["組織持續漸進適應","長期穩定被短暫劇烈變革打斷","變革是線性的","慣性不存在"], ans: 1, exp: "間斷均衡描述組織在長期穩定（收斂期）中累積壓力，直到外部衝擊觸發短暫的革命性重塑。" },
+      { q: "Leonard-Barton 提出的「核心僵固性」指什麼？", opts: ["新能力的建立","核心能力在環境變遷後變成變革障礙","組織結構的穩定","技術標準的統一"], ans: 1, exp: "核心僵固性指企業過去賴以成功的核心能力，在環境改變後反而束縛了組織的適應能力。" },
+      { q: "HTC 的「機海戰術」屬於哪種慣性來源？", opts: ["社會政治結構","慣例路徑依賴","有限理性","互補性配置"], ans: 1, exp: "機海戰術是 HTC 沿用的既有做法（慣例），因過去的成功而自我強化，形成路徑依賴。" },
+      { q: "組織生態學與演化經濟學的主要差異是什麼？", opts: ["生態學較樂觀，認為組織能適應","生態學強調選擇淘汰，演化經濟學強調組織可適應性演化","兩者完全相同","演化經濟學更悲觀"], ans: 1, exp: "組織生態學認為個別組織難以改變（由環境選擇淘汰），演化經濟學則較樂觀，強調組織可透過慣例的變異與選擇實現適應。" },
+      { q: "互補性配置如何造成組織慣性？", opts: ["降低員工士氣","策略、結構、文化相互鎖定，牽一髮動全身","增加研發成本","減少市場機會"], ans: 1, exp: "互補性配置指組織的策略、結構、文化等元素高度互依，改變任一元素都需同時調整其他元素，形成變革的高門檻。" },
+      { q: "HTC 市值一度超越哪家公司？", opts: ["Apple","Samsung","Nokia","Sony"], ans: 2, exp: "HTC 在 2011 年鼎盛時期市值一度超越 Nokia，成為全球市值最高的智慧型手機品牌之一。" },
+      { q: "從眾效應（Conformity）如何形成慣性？", opts: ["引進新技術","對過去成功模式的過度依賴，抑制創新思維","增加組織彈性","促進變革"], ans: 1, exp: "從眾效應使組織成員傾向遵循「過去行得通」的做法，抑制對新方法的探索與嘗試。" }
+    ],
+
+    // M3
+    m3_nav: "3. 動態能力",
+    m3_title: "動態能力",
+    m3_p1: "Teece、Pisano & Shuen (1997) 提出動態能力（Dynamic Capabilities）的經典定義：企業整合、建構與重組內外部能耐，以因應快速變遷環境的能力。動態能力不是一般營運能力（Ordinary Capabilities），而是改變營運能力的更高階能力——是「改變的能力」。",
+    m3_p2: "「動態能力是企業感知機會與威脅、捕獲機會、並透過重組有形與無形資產來維持競爭力的能力。」——David Teece",
+    m3_p3: "Teece 的動態能力框架以 3P 為基礎：Position（位置）——企業當前的資源、能耐與互補資產配置；Process（流程）——組織的協調、整合、學習與重組慣例；Path（路徑）——過去的決策所形成的路徑依賴與未來的策略選項。在此基礎上，動態能力展現為三大核心活動：感知（Sensing）——掃描環境、辨識機會與威脅；捕獲（Seizing）——動員資源、設計商業模式以捕獲機會；轉型（Transforming）——持續更新與重組組織資產與結構。Prahalad & Hamel 的核心能耐（Core Competence）強調企業應辨識跨事業部的共享技術與知識平台，而 Teece 的互補資產（Complementary Assets）則提醒創新者必須掌控將創新商業化所需的製造、行銷、售後服務等配套資源。",
+    m3_cards: [
+      { title: "Teece 3P 框架", desc: "Position（位置）：企業的資源、技術資產、互補資產、客戶基礎與外部關係\nProcess（流程）：協調/整合、學習、重組/轉型的組織慣例\nPath（路徑）：過去投資與慣例所形成的路徑依賴，限定了未來策略選項的範圍" },
+      { title: "感知—捕獲—轉型", desc: "Sensing（感知）：掃描技術趨勢、客戶需求、競爭動態，辨識新機會\nSeizing（捕獲）：設計商業模式、投資新能耐、建立組織架構以捕獲機會\nTransforming（轉型）：持續重組資產配置、更新組織結構與文化，維持適應力" }
+    ],
+    m3_case_title: "微個案：台積電——感知、捕獲、轉型的動態能力典範",
+    m3_case: "台積電是 Teece 動態能力框架的最佳實踐者。感知（Sensing）：台積電設有專責的技術前瞻團隊，持續掃描 AI、5G、自駕車、HPC（高效能運算）等新興需求，提前 5–10 年佈局相應製程技術。2016 年率先感知到 AI 晶片的爆發性需求，加速 7nm 與 5nm 製程開發。捕獲（Seizing）：台積電透過「大客戶策略」鎖定 Apple、NVIDIA、AMD 等關鍵客戶，為其量身打造先進製程方案，同時投資超過 1,000 億美元建設先進製程產能（包括美國亞利桑那、日本熊本廠）。開放創新平台（OIP）整合 EDA、IP 等互補資產，降低客戶設計門檻。轉型（Transforming）：台積電持續重組其組織結構——從早期的單一製程服務，轉型為涵蓋先進封裝（CoWoS、InFO）、3D 堆疊（SoIC）的全方位解決方案提供者。每次技術世代交替（如 FinFET → GAA），都伴隨著組織架構、研發流程與供應鏈關係的重組。",
+    m3_case_lesson: "啟示：台積電展示了動態能力的完整循環——持續感知技術與市場趨勢、大膽投資捕獲新機會、並透過組織轉型維持適應力。其成功不僅在於技術領先，更在於將感知—捕獲—轉型制度化為組織 DNA。",
+    m3_terms: [
+      { front: "動態能力 Dynamic Capabilities", back: "Teece et al. 定義：企業整合、建構與重組內外部能耐以因應快速變遷環境的能力。是改變營運能力的更高階能力，展現為感知、捕獲與轉型三大活動。" },
+      { front: "核心能耐 Core Competence", back: "Prahalad & Hamel 提出：跨事業部的共享技術與知識平台，具備三特性——提供進入多元市場的潛力、對最終產品的顧客價值有顯著貢獻、競爭者難以模仿。" },
+      { front: "互補資產 Complementary Assets", back: "Teece 提出：將創新成功商業化所需的配套資源，包括製造能力、行銷通路、售後服務、品牌聲譽等。創新者若不掌控互補資產，利潤可能被擁有這些資產的追隨者攫取。" }
+    ],
+    m3_q: [
+      { q: "動態能力的經典定義是由誰提出的？", opts: ["Porter","Prahalad & Hamel","Teece, Pisano & Shuen","Barney"], ans: 2, exp: "Teece, Pisano & Shuen (1997) 在《Strategic Management Journal》發表的經典論文首次系統定義了動態能力。" },
+      { q: "Teece 3P 框架中，Path 指的是什麼？", opts: ["企業目前的資源配置","未來的策略選項","過去決策形成的路徑依賴","組織流程效率"], ans: 2, exp: "Path（路徑）指過去的投資、組織慣例與決策所形成的路徑依賴，限定了企業未來可選擇的策略方向。" },
+      { q: "感知—捕獲—轉型中，「感知」的核心活動是？", opts: ["投資新產能","掃描環境、辨識機會與威脅","重組組織結構","設計商業模式"], ans: 1, exp: "感知（Sensing）的核心是掃描技術、市場、競爭環境的變化，及早辨識新興機會與潛在威脅。" },
+      { q: "核心能耐的三個特性不包括下列何者？", opts: ["進入多元市場的潛力","對顧客價值的貢獻","容易被模仿","競爭者難以模仿"], ans: 2, exp: "Prahalad & Hamel 指出核心能耐的三特性：提供進入多元市場的潛力、顯著貢獻顧客價值、競爭者難以模仿。" },
+      { q: "互補資產的概念對創新者的啟示是什麼？", opts: ["只需關注技術研發","必須掌控商業化所需的配套資源","互補資產不重要","外包所有互補資產"], ans: 1, exp: "Teece 指出，若創新者不掌控互補資產（製造、行銷等），創新的利潤可能被擁有這些資產的追隨者攫取。" },
+      { q: "台積電的 OIP 平台屬於動態能力框架中的哪個環節？", opts: ["感知","捕獲","轉型","路徑"], ans: 1, exp: "OIP 整合 EDA、IP 等互補資產，降低客戶設計門檻，是台積電捕獲（Seizing）市場機會的關鍵機制。" },
+      { q: "動態能力與一般營運能力的差異是什麼？", opts: ["動態能力是日常運作能力","動態能力是改變營運能力的更高階能力","兩者相同","營運能力層級更高"], ans: 1, exp: "動態能力是「改變的能力」——改變、更新與重組一般營運能力的更高階能力，而非日常運作本身。" },
+      { q: "台積電加速 7nm/5nm 製程開發的觸發因素是什麼？", opts: ["政府補貼","感知到 AI 晶片的爆發性需求","客戶要求降價","競爭者退出市場"], ans: 1, exp: "台積電 2016 年率先感知到 AI 運算對先進製程的巨大需求，加速開發 7nm 與 5nm 製程因應。" }
+    ],
+
+    // M4
+    m4_nav: "4. 組織學習與知識管理",
+    m4_title: "組織學習與知識管理",
+    m4_p1: "組織學習是動態能力的核心引擎。Nonaka & Takeuchi (1995) 提出 SECI 模型，描述知識在隱性（Tacit）與顯性（Explicit）之間的四種轉化模式：社會化（Socialization，隱→隱）、外化（Externalization，隱→顯）、組合化（Combination，顯→顯）、內化（Internalization，顯→隱）。知識螺旋不斷上升，從個人層次擴展至團隊、組織乃至跨組織層次。",
+    m4_p2: "「在知識經濟中，企業唯一持久的競爭優勢來源，就是比競爭者更快學習的能力。」——Peter Senge《第五項修練》",
+    m4_p3: "March (1991) 提出探索（Exploration）與利用（Exploitation）的張力：利用既有知識可帶來短期可靠回報，但過度利用導致「能力陷阱」（Competency Trap）；探索新知識帶來長期創新潛力，但投資回報不確定且耗時。Senge 的學習型組織（Learning Organization）強調五項修練：系統思考、自我超越、心智模式、共同願景、團隊學習。組織學習不只是個人學習的總和，而是透過組織慣例、文化與結構將學習制度化。",
+    m4_cards: [
+      { title: "SECI 知識轉化模型", desc: "社會化（S）：師徒制、現場觀察——隱性→隱性\n外化（E）：將經驗概念化為文字、模型——隱性→顯性\n組合化（C）：整合分散的顯性知識為系統——顯性→顯性\n內化（I）：透過實踐將知識內化為技能——顯性→隱性" },
+      { title: "探索 vs. 利用的平衡", desc: "利用（Exploitation）：精進現有能力、提升效率、降低風險→短期確定性回報\n探索（Exploration）：嘗試新技術、進入新市場、實驗新模式→長期不確定性回報\n過度利用→能力陷阱；過度探索→資源耗散。組織須在兩者間取得動態平衡。" }
+    ],
+    m4_case_title: "微個案：宏碁與施振榮的微笑曲線——從製造利用到品牌探索的學習轉型",
+    m4_case: "宏碁創辦人施振榮 1992 年提出的「微笑曲線」（Smiling Curve）是台灣產業學習轉型的經典理論。微笑曲線指出：在價值鏈中，上游（研發/設計/品牌）與下游（行銷/服務/品牌）的附加價值高，中游（製造/組裝）附加價值最低。宏碁的發展歷程完美展現了從「利用」到「探索」的學習轉型：1990 年代，宏碁以 OEM/ODM 代工製造為主（利用既有製造能力），但施振榮意識到代工的利潤持續被壓縮。2000 年代，宏碁啟動品牌轉型戰略——分拆代工業務成立緯創，宏碁聚焦品牌與通路經營（探索新能力）。這個轉型過程充滿 SECI 螺旋：代工時期累積的產業知識（隱性知識）透過微笑曲線理論被「外化」為顯性策略框架；品牌經營的國際經驗透過「組合化」整合為全球營運系統；而品牌管理的 know-how 再透過「內化」成為組織慣例。施振榮的微笑曲線理論不僅引導了宏碁自身的轉型，更影響了整個台灣產業從「製造代工」邁向「品牌創新」的學習路徑。",
+    m4_case_lesson: "啟示：宏碁的轉型展示了從利用到探索的學習跳躍，以及 SECI 知識螺旋在策略變革中的運作。微笑曲線的提出本身就是「外化」——將隱性的產業洞見轉化為廣泛影響的顯性知識。",
+    m4_terms: [
+      { front: "SECI 模型", back: "Nonaka & Takeuchi 提出的知識轉化模型：社會化（隱→隱）、外化（隱→顯）、組合化（顯→顯）、內化（顯→隱）。四種模式形成不斷上升的知識螺旋，從個人擴展至組織層次。" },
+      { front: "探索與利用 Exploration/Exploitation", back: "March (1991) 提出：探索（追求新知識、實驗、創新）與利用（精進既有能力、效率、確定性）的張力。組織須在兩者間取得平衡，避免陷入能力陷阱或資源耗散。" },
+      { front: "學習型組織 Learning Organization", back: "Senge 提出：具備持續學習與自我轉化能力的組織。五項修練為系統思考、自我超越、心智模式、共同願景、團隊學習，其中系統思考是整合其他四項的核心修練。" }
+    ],
+    m4_q: [
+      { q: "SECI 模型中，「外化」指的是什麼知識轉化？", opts: ["隱性→隱性","隱性→顯性","顯性→顯性","顯性→隱性"], ans: 1, exp: "外化（Externalization）是將個人的隱性知識（經驗、直覺）透過對話、比喻、模型等方式，轉化為可傳遞的顯性知識。" },
+      { q: "March 提出的「能力陷阱」是什麼現象？", opts: ["過度探索導致資源耗散","過度利用既有能力而忽略環境變遷","缺乏核心能力","組織學習過快"], ans: 1, exp: "能力陷阱指組織過度專注於利用（Exploitation）既有能力，短期績效良好但長期喪失適應新環境的能力。" },
+      { q: "施振榮的微笑曲線指出，價值鏈中附加價值最低的環節是？", opts: ["研發設計","品牌行銷","製造組裝","售後服務"], ans: 2, exp: "微笑曲線顯示：上游（研發/設計）與下游（品牌/行銷/服務）附加價值高，中游（製造/組裝）附加價值最低。" },
+      { q: "Peter Senge 學習型組織的核心修練是什麼？", opts: ["自我超越","心智模式","系統思考","團隊學習"], ans: 2, exp: "Senge 指出系統思考（Systems Thinking）是整合其他四項修練的核心，也被稱為「第五項修練」。" },
+      { q: "宏碁分拆代工業務成立緯創，屬於哪種學習策略？", opts: ["強化利用能力","從利用轉向探索","放棄學習","維持現狀"], ans: 1, exp: "宏碁將代工業務（利用）分拆給緯創，自身聚焦品牌經營（探索），是典型的從利用轉向探索的學習策略。" },
+      { q: "SECI 模型中，師徒制屬於哪種知識轉化？", opts: ["外化","組合化","社會化","內化"], ans: 2, exp: "師徒制是透過觀察、模仿與實踐，將師傅的隱性知識傳遞給學徒，屬於隱性→隱性的社會化過程。" },
+      { q: "下列何者不是 Senge 學習型組織的五項修練？", opts: ["系統思考","標竿學習","自我超越","共同願景"], ans: 1, exp: "五項修練為：系統思考、自我超越、心智模式、共同願景、團隊學習。標竿學習（Benchmarking）不在其中。" },
+      { q: "知識螺旋的「上升」意味著什麼？", opts: ["知識品質下降","知識從個人層次擴展至團隊、組織、跨組織層次","知識變得更隱性","組織規模縮小"], ans: 1, exp: "SECI 知識螺旋不斷上升，意味著知識創造從個人擴展至團隊、部門、組織乃至跨組織的更大範圍。" }
+    ],
+
+    // M5
+    m5_nav: "5. 組織雙元性與設計",
+    m5_title: "組織雙元性與設計",
+    m5_p1: "組織雙元性（Organizational Ambidexterity）指企業同時進行探索（Exploration）與利用（Exploitation）的能力。這是企業永續經營的核心挑戰：過度聚焦利用，短期績效穩定但長期面臨被淘汰的風險；過度偏向探索，創新活力充沛但資源效率低下。如何在結構上、流程上與文化上同時支持這兩種截然不同的活動模式，是組織設計的最高課題。",
+    m5_p2: "「成功的企業是雙元的——它們能同時做好開發現有事業與發明未來事業這兩件事。」——O'Reilly & Tushman",
+    m5_p3: "實現雙元性的三種主要模式：（1）結構性雙元（Structural Ambidexterity）：將探索單位與利用單位分設為不同部門，各有獨立的結構、流程與文化，由高階管理團隊進行跨部門整合。（2）情境式雙元（Contextual Ambidexterity）：不做結構分離，而是透過組織情境（支持+信任的文化環境）賦予個人自主判斷何時探索、何時利用的能力。（3）時序雙元（Sequential Ambidexterity）：在不同時期交替側重探索或利用。組織設計的三大支柱——結構（Structure）、控制系統（Control）、文化（Culture）——必須協調配合以支持雙元性的運作。",
+    m5_cards: [
+      { title: "三種雙元性模式", desc: "結構性雙元：獨立探索/利用單位 + 高層整合\n情境式雙元：統一結構 + 個人自主切換探索/利用\n時序雙元：不同時期交替側重探索或利用\n三者各有適用情境，可組合運用。" },
+      { title: "組織設計三支柱", desc: "結構（Structure）：部門化、層級、報告關係——決定資訊流動與決策權配置\n控制系統（Control）：績效衡量、激勵機制、規劃流程——協調目標一致性\n文化（Culture）：價值觀、規範、行為模式——塑造員工自主行為的基礎" }
+    ],
+    m5_case_title: "微個案：鴻海（Foxconn）MIH 平台——從製造利用到電動車探索的結構性雙元",
+    m5_case: "鴻海科技集團（Foxconn）長期以來是全球最大的電子代工製造商，其核心能力在於大規模、高效率的精密製造（典型的利用活動）。2020 年，鴻海董事長劉揚偉宣布成立 MIH（Mobility in Harmony）開放電動車平台聯盟，這是一次大膽的結構性雙元設計。MIH 平台作為獨立的探索單位，採用截然不同的組織邏輯：開放架構（vs. 代工的封閉客製）、軟體定義（vs. 硬體導向）、聯盟生態系（vs. 垂直整合供應鏈）。鴻海的做法完美體現了結構性雙元——MIH 擁有獨立的團隊、預算、文化與 KPI，不受母公司代工事業的「利用邏輯」干擾，同時透過劉揚偉親自主導實現高層整合，讓 MIH 可以借助鴻海既有的製造基礎設施與供應鏈管理能力。截至 2025 年，MIH 聯盟已匯集超過 2,700 家全球成員，推出 Model C（鴻華先進 LUXGEN n⁷）量產車款，成為台灣電動車產業最重要的開放平台。",
+    m5_case_lesson: "啟示：鴻海 MIH 是結構性雙元的教科書案例——設立獨立探索單位追求電動車創新，同時保持代工製造的利用優勢，由最高領導人進行跨部門整合。這展示了傳統製造企業如何透過組織設計實現雙元性。",
+    m5_terms: [
+      { front: "組織雙元性 Organizational Ambidexterity", back: "企業同時進行探索（創新、實驗）與利用（效率、精進）的能力。O'Reilly & Tushman 指出，成功的長壽企業必須是雙元的——同時做好現有事業與未來事業。" },
+      { front: "結構性雙元 Structural Ambidexterity", back: "透過組織結構分離探索與利用活動：設立獨立的探索單位與利用單位，各有不同的結構、流程、文化與 KPI，由高階管理團隊進行跨部門整合。" },
+      { front: "情境式雙元 Contextual Ambidexterity", back: "不做結構分離，而是透過營造支持性的組織情境（信任、自主、紀律、彈性），賦予個人自主判斷何時該探索、何時該利用的能力。依賴文化與領導力。" }
+    ],
+    m5_q: [
+      { q: "組織雙元性的核心挑戰是什麼？", opts: ["只做利用就好","同時進行探索與利用兩種截然不同的活動","只做探索就好","縮小組織規模"], ans: 1, exp: "雙元性的核心挑戰是同時支持探索（創新）與利用（效率）——兩者在邏輯、文化、流程上都截然不同。" },
+      { q: "結構性雙元的關鍵整合機制是什麼？", opts: ["中階主管自行協調","高階管理團隊的跨部門整合","員工自主選擇","外部顧問介入"], ans: 1, exp: "結構性雙元中，探索與利用單位各自獨立運作，必須由高階管理團隊（通常是 CEO）進行跨部門整合。" },
+      { q: "情境式雙元主要依賴什麼來運作？", opts: ["結構分離","支持性的組織情境與文化","嚴格的層級控制","外部合作"], ans: 1, exp: "情境式雙元不做結構分離，而是透過營造信任、自主、紀律兼具的組織情境，賦予個人自主切換的能力。" },
+      { q: "鴻海 MIH 平台屬於哪種雙元性模式？", opts: ["情境式雙元","時序雙元","結構性雙元","沒有雙元性"], ans: 2, exp: "MIH 作為獨立的探索單位，與代工事業（利用單位）結構上分離，由最高領導人整合——典型的結構性雙元。" },
+      { q: "組織設計三支柱不包括下列何者？", opts: ["結構","控制系統","文化","市場"], ans: 3, exp: "組織設計三支柱為結構（Structure）、控制系統（Control）、文化（Culture），市場不是組織內部設計要素。" },
+      { q: "過度聚焦「利用」的風險是什麼？", opts: ["資源耗散","短期績效穩定但長期被淘汰","創新過多","組織過於靈活"], ans: 1, exp: "過度利用導致「能力陷阱」——短期績效穩定，但組織缺乏適應新環境的創新能力，長期面臨被淘汰的風險。" },
+      { q: "MIH 平台與鴻海代工事業在組織邏輯上的主要差異是？", opts: ["兩者完全相同","MIH 採開放架構、軟體定義、聯盟生態系","MIH 更注重成本效率","MIH 規模更大"], ans: 1, exp: "MIH 採用開放架構、軟體定義、聯盟生態系邏輯，與鴻海代工的封閉客製、硬體導向、垂直整合截然不同。" },
+      { q: "時序雙元的意思是？", opts: ["同一時間探索與利用並行","在不同時期交替側重探索或利用","完全放棄利用","只有短期策略"], ans: 1, exp: "時序雙元指在不同的時間階段，交替側重探索（如轉型期重探索）或利用（如穩定期重效率）。" }
+    ],
+
+    // M6
+    m6_nav: "6. 外部資源",
+    m6_title: "延伸閱讀與外部資源",
+    m6_desc: "以下精選與動態能力及組織學習相關的經典文獻、線上資源與教學影片，供進一步探索。",
+
+    // M7
+    mlab_nav: "7. 互動實驗室",
+    mlab_title: "互動實驗室",
+    mlab_desc: "透過互動模擬器，體驗產業生命週期、動態能力、SECI 知識轉化與組織雙元性的核心概念。"
+  },
+  en: {
+    brand: "DCL",
+    title: "Dynamic Capabilities & Organizational Learning",
+    subtitle: "SMMC · Interactive Learning Series",
+    nav_modules: "Module Directory", nav_prev: "Previous", nav_next: "Next",
+    key_terms: "Key Terms", flip_prompt: "Click to flip", audio_read: "Audio Guide",
+    quiz_title: "Module Quiz (Random 4 Questions)",
+    submit: "Submit", retry: "Retry",
+    score: "Score", correct: "Correct", incorrect: "Incorrect", explanation: "Explanation",
+    analytics_title: "Learning Analytics", analytics_desc: "Track your learning progress, interaction frequency, and quiz performance",
+    analytics_form_title: "Learner Information",
+    analytics_group: "Group", analytics_dept: "Department",
+    analytics_dept_ph: "e.g., IBS3", analytics_id: "Student ID", analytics_id_ph: "e.g., 112212099",
+    analytics_name: "Name", analytics_name_ph: "e.g., Jimmy Lo",
+    analytics_export_csv: "Export CSV Record",
+    analytics_fill_required: "Complete all fields to unlock export",
+    group_options: ["G1","G2","G3","G4","G5","Others"],
+    analytics_total_time: "Total Study Time", analytics_total_clicks: "Total Interactions",
+    analytics_overall_acc: "Overall Quiz Accuracy",
+    analytics_module: "Module", analytics_time: "Time Spent",
+    analytics_clicks: "Clicks", analytics_acc: "Accuracy",
+    analytics_correct_ans_total: "Correct / Answered / Total",
+    analytics_no_data: "Not taken", analytics_sec: "s", analytics_times: "x",
+    date: "Version 2026.03.26", copyright: "For Educational Use Only",
+    architect_label: "Architect:", architect_name: "Prof. Shihmin Lo",
+    architect_url: "https://www.ibs.ncnu.edu.tw/index.php/faculty/tenured-professor/299-smlo",
+
+    // M0
+    m0_nav: "0. Overview",
+    m0_title: "Dynamic Capabilities & Organizational Learning",
+    m0_intro: "This module explores how firms sustain competitive advantage in dynamic environments. Starting from industry life cycle evolution, we examine organizational inertia and strategic change tensions, Teece's dynamic capabilities framework (Sensing–Seizing–Transforming), the SECI knowledge spiral, and ambidexterity challenges. Taiwan-based micro cases bridge theory with practice.",
+    m0_why: "Why Do Dynamic Capabilities & Organizational Learning Matter?",
+    m0_why_desc: "In an era of rapid technological change and blurring industry boundaries, static resource advantages are no longer sufficient. Firms must cultivate dynamic capabilities to sense environmental shifts, rapidly reallocate resources, and reshape organizational competences, while building learning organizations that convert individual knowledge into organizational wisdom. From TSMC's process leadership to Acer's Smiling Curve transformation, dynamic capabilities determine who wins in times of disruption.",
+    m0_stats: [
+      { val: "3P", label: "Teece's DC Framework" },
+      { val: "SECI", label: "Nonaka's Knowledge Spiral" },
+      { val: "4 Stages", label: "Industry Life Cycle" },
+      { val: "Ambidex.", label: "Explore vs. Exploit" }
+    ],
+    m0_modules: [
+      { num: "01", title: "Industry Life Cycle & Evolution", desc: "S-curve, dominant design, technical standards, and evolutionary patterns" },
+      { num: "02", title: "Organizational Inertia & Strategic Change", desc: "Sources of inertia, punctuated equilibrium, organizational ecology & evolutionary economics" },
+      { num: "03", title: "Dynamic Capabilities", desc: "Teece's Sensing–Seizing–Transforming, core competence & complementary assets" },
+      { num: "04", title: "Organizational Learning & Knowledge Mgmt", desc: "SECI model, learning organization, exploration vs. exploitation balance" },
+      { num: "05", title: "Organizational Ambidexterity & Design", desc: "Structural, contextual & sequential ambidexterity; three pillars of org design" }
+    ],
+    m0_start: "Start Learning →",
+
+    // M1
+    m1_nav: "1. Life Cycle & Evolution",
+    m1_title: "Industry Life Cycle & Evolution",
+    m1_p1: "Industries are not static structures but evolve through predictable life cycle patterns. From embryonic-stage technology exploration, growth-stage scaling, maturity-stage efficiency competition, to decline-stage consolidation—each stage features distinct key success factors, competitive dynamics, and strategic priorities. Understanding where an industry sits in its life cycle is the prerequisite for crafting the right strategy.",
+    m1_p2: "\"Industry evolution follows the S-curve pattern: technological progress is initially slow, then accelerates rapidly, and finally approaches saturation. New S-curves replace old ones, driving the continuous evolution of industries.\" — Grant",
+    m1_p3: "Key concepts of industry evolution include: the establishment of a Dominant Design marks the shift from product innovation to process innovation; technology standards battles determine winner-take-all or multi-standard outcomes; and the demand-side S-curve forecasts optimal timing for capacity investments. Firms must discern these evolutionary patterns to make the right strategic choices at the right time.",
+    m1_cards: [
+      { title: "S-Curve & Dominant Design", desc: "Technology follows an S-curve: slow initial progress (embryonic), rapid acceleration (growth), then plateauing (maturity). Once a dominant design is established, competition shifts from 'what product to make' to 'how to produce more efficiently'—product innovation gives way to process innovation." },
+      { title: "Four Stages of Industry Life Cycle", desc: "Embryonic (technology competition, few pioneers) → Growth (rapid expansion, standardization) → Maturity (scale economies, homogeneous competition) → Decline (overcapacity, price wars, exit/consolidation). KSFs differ at each stage, requiring strategic adaptation." }
+    ],
+    m1_case_title: "Micro Case: Taiwan Semiconductor — Life Cycle Evolution from Embryonic to Global Dominance",
+    m1_case: "Taiwan's semiconductor industry perfectly illustrates industry life cycle theory. In the 1970s embryonic stage, ITRI began technology exploration via RCA technology transfer; in 1987, TSMC was founded, pioneering the pure-play foundry model—establishing the dominant design. In the 1990s–2000s growth stage, UMC and others followed, making Taiwan the global foundry hub. In the 2010s maturity stage, competition at 28nm and above became commoditized, shifting toward advanced process innovation (FinFET, EUV). TSMC, through continuous R&D investment (>8% of revenue annually) and learning curve effects, maintained leadership at 7nm, 5nm, and 3nm nodes, leaving competitors (Samsung, Intel) far behind. This case demonstrates how strategic focus evolves: technology exploration (embryonic) → scale expansion (growth) → process innovation & cost efficiency (maturity).",
+    m1_case_lesson: "Lesson: Taiwan's semiconductor success validates industry life cycle theory—adopting strategies aligned with each stage's KSFs is key. TSMC's journey from establishing the foundry 'dominant design' to maturity-stage process innovation leadership exemplifies dynamic adaptation.",
+    m1_terms: [
+      { front: "S-Curve", back: "Describes the typical pattern of technological development or market growth: slow initial progress, rapid acceleration in the middle, and eventual saturation. New S-curves replace old ones, driving continuous industry evolution." },
+      { front: "Dominant Design", back: "A product architecture or technical standard that gains broad market acceptance. Once established, competition shifts from product to process innovation as the industry enters mass production and cost competition." },
+      { front: "Industry Life Cycle", back: "The evolutionary progression of an industry from embryonic, growth, maturity to decline. Each stage features different demand growth rates, competitive dynamics, and KSFs, requiring strategic adjustment." }
+    ],
+    m1_q: [
+      { q: "What does the S-curve describe?", opts: ["Linear profit growth","Initially slow, then rapid, then plateauing tech development","Cyclical price fluctuations","Uniform employee learning progress"], ans: 1, exp: "The S-curve describes the typical non-linear pattern from slow start, through acceleration, to saturation in technology or market development." },
+      { q: "How does competition shift after a dominant design is established?", opts: ["From process to product innovation","From product to process innovation","Competition disappears entirely","Shifts to pure price wars"], ans: 1, exp: "After dominant design establishment, product architectures converge and firms compete on production efficiency—process innovation becomes key." },
+      { q: "What is the key success factor in the maturity stage?", opts: ["Technology exploration & product innovation","Scale economies & cost efficiency","Brand building & market entry","Talent attraction & R&D investment"], ans: 1, exp: "In maturity, markets are saturated and products homogenized; competition focuses on cost efficiency and scale economies." },
+      { q: "What 'dominant design' did TSMC establish?", opts: ["Memory chips","Pure-play foundry model","Vertical integration","Packaging & testing services"], ans: 1, exp: "TSMC pioneered the pure-play foundry model (no competition with IC design customers), which became the dominant business model in global semiconductors." },
+      { q: "What characterizes the embryonic stage?", opts: ["Intense price wars among many firms","Few pioneers exploring technology, product innovation focus","Overcapacity and firm exits","Largest market size"], ans: 1, exp: "The embryonic stage is led by few technology pioneers, focused on product innovation and technology feasibility, with small market size." },
+      { q: "What is it called when a new S-curve replaces an old one?", opts: ["Dominant design","Technological discontinuity","Market saturation","Overcapacity"], ans: 1, exp: "When a new technology's S-curve surpasses the old one, technological discontinuity occurs, driving industry transformation." },
+      { q: "What is TSMC's core competitive strategy in the maturity stage?", opts: ["Price cutting for market share","Continuous investment in advanced process innovation","Pivoting to IC design","Exiting the foundry market"], ans: 1, exp: "TSMC invests heavily in R&D (>8% of revenue) to lead in advanced processes like EUV, maintaining its technological moat." },
+      { q: "Which is NOT a stage in the industry life cycle?", opts: ["Embryonic","Shakeout","Eruption","Decline"], ans: 2, exp: "Standard life cycle stages are embryonic, growth (including shakeout), maturity, and decline; 'eruption' is not a standard term." }
+    ],
+
+    // M2
+    m2_nav: "2. Inertia & Strategic Change",
+    m2_title: "Organizational Inertia & Strategic Change",
+    m2_p1: "Environmental change demands organizational change, but organizational inertia often prevents firms from adapting. Sources of inertia include: path dependence of organizational routines, resistance from socio-political structures, conformity to past success patterns, bounded rationality limiting managerial cognition, and mutual lock-in among complementary configurations.",
+    m2_p2: "\"Organizational inertia is not a defect but a source of stability. Yet when the environment shifts dramatically, yesterday's core competence becomes today's core rigidity.\" — Leonard-Barton",
+    m2_p3: "Punctuated Equilibrium theory describes the typical pattern of organizational change: long periods of stable convergent evolution punctuated by brief, dramatic revolutionary change. Organizational Ecology explains from a population level why individual organizations struggle to adapt: selection eliminates the unfit, retention stabilizes effective patterns. Evolutionary Economics is more optimistic, emphasizing that organizations can achieve adaptive evolution through variation, selection, and retention of routines.",
+    m2_cards: [
+      { title: "Five Sources of Organizational Inertia", desc: "(1) Routine path dependence: existing processes self-reinforce\n(2) Socio-political structures: power and interest patterns resist change\n(3) Conformity: over-reliance on past success patterns\n(4) Bounded rationality: managerial cognitive biases and information processing limits\n(5) Complementary configurations: strategy, structure, culture mutually lock in" },
+      { title: "Punctuated Equilibrium & Change Patterns", desc: "Organizations don't adapt continuously but accumulate incremental adjustments during long convergent periods, until external shocks (tech revolution, regulatory change, crisis) trigger brief revolutionary periods that fundamentally reshape strategy, structure, and power configurations." }
+    ],
+    m2_case_title: "Micro Case: HTC — From Smartphone Pioneer to Market Edge: The Inertia Trap",
+    m2_case: "HTC's rise and fall is the most vivid textbook case of organizational inertia. During 2008–2011, HTC was a global smartphone pioneer, launching the world's first Android phone (HTC Dream), with market cap once surpassing Nokia. However, HTC fell into multiple inertia traps: (1) Routine path dependence—continued using 'product flooding' strategy launching numerous models instead of focusing on flagship lines; (2) Conformity—over-relying on the early successful carrier partnership model, failing to build own-brand retail channels timely; (3) Socio-political structures—R&D, design, and marketing operated in silos without integrated product strategy; (4) Bounded rationality—top management failed to timely recognize Apple and Samsung's fundamental threats in software-hardware integration and marketing investment. When Samsung Galaxy S series and iPhone attacked with integrated ecosystems and massive marketing, HTC's global share plummeted from 8.8% in 2011 to under 2% by 2015. In 2017, HTC sold part of its smartphone division to Google, marking the end of its smartphone era.",
+    m2_case_lesson: "Lesson: HTC's case perfectly demonstrates 'core competence becoming core rigidity'—early success patterns (product flooding, carrier partnerships) became barriers to change when the environment shifted dramatically. When multiple inertia sources act simultaneously, self-renewal becomes nearly impossible.",
+    m2_terms: [
+      { front: "Organizational Inertia", back: "An organization's tendency to resist change. Sources include routine path dependence, socio-political structures, conformity, bounded rationality, and mutual lock-in of complementary configurations, making adaptation difficult." },
+      { front: "Punctuated Equilibrium", back: "The typical pattern of organizational change: long periods of stable convergent evolution punctuated by brief, dramatic revolutionary change. Introduced to org theory by Tushman & Romanelli, explaining the non-linear nature of strategic change." },
+      { front: "Core Rigidity", back: "Leonard-Barton's concept: a firm's core competencies may become core rigidities when the environment changes. Past success becomes the greatest barrier to future adaptation." }
+    ],
+    m2_q: [
+      { q: "Which is NOT a source of organizational inertia?", opts: ["Routine path dependence","Socio-political structures","Dynamic capabilities","Bounded rationality"], ans: 2, exp: "Dynamic capabilities are the ability to overcome inertia, not a source of it. Inertia sources include routines, socio-political structures, conformity, bounded rationality, and complementary configurations." },
+      { q: "What is the core argument of punctuated equilibrium theory?", opts: ["Continuous gradual adaptation","Long stability punctuated by brief dramatic change","Linear change","Inertia doesn't exist"], ans: 1, exp: "Punctuated equilibrium describes organizations accumulating pressure during long convergent periods until external shocks trigger brief revolutionary reshaping." },
+      { q: "What does Leonard-Barton's 'core rigidity' mean?", opts: ["Building new capabilities","Core competencies becoming change barriers after environmental shifts","Organizational stability","Technology standardization"], ans: 1, exp: "Core rigidity means capabilities that drove past success now constrain the organization's ability to adapt to new conditions." },
+      { q: "HTC's 'product flooding' represents which inertia source?", opts: ["Socio-political structures","Routine path dependence","Bounded rationality","Complementary configurations"], ans: 1, exp: "Product flooding was HTC's established practice (routine) that self-reinforced through past success, creating path dependence." },
+      { q: "Key difference between organizational ecology and evolutionary economics?", opts: ["Ecology is more optimistic about adaptation","Ecology emphasizes selection/elimination, evolutionary economics emphasizes adaptive evolution","They are identical","Evolutionary economics is more pessimistic"], ans: 1, exp: "Organizational ecology views individual organizations as largely unable to change (environment selects/eliminates), while evolutionary economics is more optimistic about firms' adaptive evolution through routine variation and selection." },
+      { q: "How do complementary configurations create inertia?", opts: ["Lower employee morale","Strategy, structure, culture mutually lock in, change requires simultaneous adjustment","Increase R&D costs","Reduce market opportunities"], ans: 1, exp: "Complementary configurations mean an org's strategy, structure, and culture are highly interdependent—changing any element requires simultaneous adjustment of others, creating high barriers to change." },
+      { q: "HTC's market cap once surpassed which company?", opts: ["Apple","Samsung","Nokia","Sony"], ans: 2, exp: "At its 2011 peak, HTC's market capitalization briefly exceeded Nokia's, making it one of the most valuable smartphone brands globally." },
+      { q: "How does conformity create inertia?", opts: ["Introduces new technology","Over-reliance on past success patterns suppresses innovative thinking","Increases flexibility","Promotes change"], ans: 1, exp: "Conformity makes organizational members tend to follow 'what worked before,' suppressing exploration of new approaches and experiments." }
+    ],
+
+    // M3
+    m3_nav: "3. Dynamic Capabilities",
+    m3_title: "Dynamic Capabilities",
+    m3_p1: "Teece, Pisano & Shuen (1997) defined dynamic capabilities as: a firm's ability to integrate, build, and reconfigure internal and external competences to address rapidly changing environments. Dynamic capabilities are not ordinary operational capabilities but higher-order capabilities that change operational capabilities—the 'ability to change.'",
+    m3_p2: "\"Dynamic capabilities are the firm's ability to sense opportunities and threats, seize opportunities, and maintain competitiveness through reconfiguring tangible and intangible assets.\" — David Teece",
+    m3_p3: "Teece's DC framework builds on 3P: Position—the firm's current resource, competence, and complementary asset configuration; Process—organizational routines for coordination, integration, learning, and reconfiguration; Path—path dependencies from past decisions shaping future strategic options. On this foundation, dynamic capabilities manifest in three core activities: Sensing—scanning the environment, identifying opportunities and threats; Seizing—mobilizing resources, designing business models to capture opportunities; Transforming—continuously renewing and reconfiguring organizational assets and structures. Prahalad & Hamel's Core Competence emphasizes identifying shared technology and knowledge platforms across business units, while Teece's Complementary Assets reminds innovators they must control the manufacturing, marketing, and after-sales resources needed to commercialize innovations.",
+    m3_cards: [
+      { title: "Teece's 3P Framework", desc: "Position: resources, technology assets, complementary assets, customer base & external relations\nProcess: coordination/integration, learning, reconfiguration/transformation routines\nPath: path dependencies from past investments & routines, constraining future strategic options" },
+      { title: "Sensing–Seizing–Transforming", desc: "Sensing: scan technology trends, customer needs, competitive dynamics to identify new opportunities\nSeizing: design business models, invest in new competences, build organizational architecture to capture opportunities\nTransforming: continuously reconfigure asset allocation, renew organizational structure & culture to maintain adaptability" }
+    ],
+    m3_case_title: "Micro Case: TSMC — Sensing, Seizing, Transforming: A Dynamic Capabilities Exemplar",
+    m3_case: "TSMC is the best practitioner of Teece's dynamic capabilities framework. Sensing: TSMC maintains dedicated technology foresight teams continuously scanning emerging demands in AI, 5G, autonomous vehicles, and HPC, planning process technologies 5–10 years ahead. In 2016, it sensed the explosive demand for AI chips early and accelerated 7nm and 5nm development. Seizing: TSMC locks in key customers (Apple, NVIDIA, AMD) through its 'major customer strategy,' crafting customized advanced process solutions while investing over $100 billion in advanced capacity (including Arizona, USA and Kumamoto, Japan fabs). Its Open Innovation Platform (OIP) integrates complementary assets like EDA and IP, lowering customer design barriers. Transforming: TSMC continuously reconfigures its organizational structure—from early single-process services to a comprehensive solutions provider encompassing advanced packaging (CoWoS, InFO) and 3D stacking (SoIC). Each technology transition (e.g., FinFET → GAA) is accompanied by organizational structure, R&D process, and supply chain relationship reconfiguration.",
+    m3_case_lesson: "Lesson: TSMC demonstrates the complete dynamic capabilities cycle—continuously sensing technology and market trends, boldly investing to seize opportunities, and maintaining adaptability through organizational transformation. Its success lies not just in technology leadership but in institutionalizing Sensing–Seizing–Transforming as organizational DNA.",
+    m3_terms: [
+      { front: "Dynamic Capabilities", back: "Teece et al.'s definition: a firm's ability to integrate, build, and reconfigure internal and external competences to address rapidly changing environments. Higher-order capabilities that change operational capabilities, manifesting as sensing, seizing, and transforming activities." },
+      { front: "Core Competence", back: "Prahalad & Hamel's concept: shared technology and knowledge platforms across business units with three characteristics—potential access to diverse markets, significant contribution to end-product customer value, and difficult for competitors to imitate." },
+      { front: "Complementary Assets", back: "Teece's concept: supporting resources needed to commercialize innovations successfully, including manufacturing capability, marketing channels, after-sales service, and brand reputation. Without them, innovators risk having profits captured by followers who control these assets." }
+    ],
+    m3_q: [
+      { q: "Who proposed the classic definition of dynamic capabilities?", opts: ["Porter","Prahalad & Hamel","Teece, Pisano & Shuen","Barney"], ans: 2, exp: "Teece, Pisano & Shuen (1997) published the classic paper in Strategic Management Journal that first systematically defined dynamic capabilities." },
+      { q: "In Teece's 3P framework, what does 'Path' refer to?", opts: ["Current resource allocation","Future strategic options","Path dependencies from past decisions","Organizational process efficiency"], ans: 2, exp: "Path refers to path dependencies formed by past investments, routines, and decisions, constraining the range of future strategic options available to the firm." },
+      { q: "What is the core activity of 'Sensing'?", opts: ["Investing in new capacity","Scanning environment to identify opportunities and threats","Reorganizing structure","Designing business models"], ans: 1, exp: "Sensing's core is scanning technological, market, and competitive environmental changes to identify emerging opportunities and potential threats early." },
+      { q: "Which is NOT one of core competence's three characteristics?", opts: ["Potential access to diverse markets","Contribution to customer value","Easy to imitate","Difficult for competitors to imitate"], ans: 2, exp: "Prahalad & Hamel identified three characteristics: potential access to diverse markets, significant customer value contribution, and difficult for competitors to imitate." },
+      { q: "What do complementary assets teach innovators?", opts: ["Focus only on technology R&D","Must control resources needed for commercialization","Complementary assets don't matter","Outsource all complementary assets"], ans: 1, exp: "Teece showed that without controlling complementary assets (manufacturing, marketing, etc.), innovation profits may be captured by followers who control these assets." },
+      { q: "TSMC's OIP platform falls under which DC activity?", opts: ["Sensing","Seizing","Transforming","Path"], ans: 1, exp: "OIP integrates complementary assets like EDA and IP, lowering customer design barriers—a key mechanism for TSMC to seize market opportunities." },
+      { q: "How do dynamic capabilities differ from ordinary capabilities?", opts: ["DCs are daily operational abilities","DCs are higher-order capabilities that change operational capabilities","They're the same","Operational capabilities are higher level"], ans: 1, exp: "Dynamic capabilities are 'the ability to change'—higher-order capabilities that change, renew, and reconfigure ordinary operational capabilities, not daily operations themselves." },
+      { q: "What triggered TSMC's acceleration of 7nm/5nm development?", opts: ["Government subsidies","Sensing explosive AI chip demand","Customer price-cut demands","Competitor exits"], ans: 1, exp: "TSMC sensed the massive demand for AI computing on advanced processes in 2016 and accelerated 7nm and 5nm process development." }
+    ],
+
+    // M4
+    m4_nav: "4. Learning & Knowledge Mgmt",
+    m4_title: "Organizational Learning & Knowledge Management",
+    m4_p1: "Organizational learning is the core engine of dynamic capabilities. Nonaka & Takeuchi (1995) proposed the SECI model describing four modes of knowledge conversion between tacit and explicit: Socialization (tacit→tacit), Externalization (tacit→explicit), Combination (explicit→explicit), and Internalization (explicit→tacit). The knowledge spiral continuously ascends from individual to team, organizational, and inter-organizational levels.",
+    m4_p2: "\"In the knowledge economy, the only sustainable competitive advantage comes from the ability to learn faster than competitors.\" — Peter Senge, The Fifth Discipline",
+    m4_p3: "March (1991) identified the tension between Exploration and Exploitation: exploiting existing knowledge yields reliable short-term returns, but over-exploitation leads to 'competency traps'; exploring new knowledge offers long-term innovation potential but with uncertain and time-consuming returns. Senge's Learning Organization emphasizes five disciplines: systems thinking, personal mastery, mental models, shared vision, and team learning. Organizational learning is not merely the sum of individual learning but institutionalizes learning through organizational routines, culture, and structures.",
+    m4_cards: [
+      { title: "SECI Knowledge Conversion Model", desc: "Socialization (S): apprenticeship, on-site observation — tacit→tacit\nExternalization (E): articulating experience into words, models — tacit→explicit\nCombination (C): integrating scattered explicit knowledge into systems — explicit→explicit\nInternalization (I): embodying knowledge through practice — explicit→tacit" },
+      { title: "Exploration vs. Exploitation Balance", desc: "Exploitation: refine existing capabilities, improve efficiency, reduce risk → certain short-term returns\nExploration: try new technologies, enter new markets, experiment with new models → uncertain long-term returns\nOver-exploitation → competency trap; over-exploration → resource dissipation. Organizations must dynamically balance both." }
+    ],
+    m4_case_title: "Micro Case: Acer & Stan Shih's Smiling Curve — Learning Transformation from Manufacturing Exploitation to Brand Exploration",
+    m4_case: "Acer founder Stan Shih's 1992 'Smiling Curve' is a classic theory of Taiwan's industrial learning transformation. The Smiling Curve shows that in the value chain, upstream (R&D/design/brand) and downstream (marketing/service/brand) have high added value, while midstream (manufacturing/assembly) has the lowest. Acer's development perfectly demonstrates the learning transformation from 'exploitation' to 'exploration': in the 1990s, Acer primarily did OEM/ODM manufacturing (exploiting existing manufacturing capabilities), but Shih recognized that contract manufacturing margins were being continuously squeezed. In the 2000s, Acer launched its brand transformation strategy—spinning off manufacturing into Wistron, while Acer focused on brand and channel management (exploring new capabilities). This transformation was rich with SECI spirals: industry knowledge accumulated during the OEM era (tacit knowledge) was 'externalized' through the Smiling Curve theory into an explicit strategic framework; international brand management experience was 'combined' into global operating systems; and brand management know-how was 'internalized' into organizational routines. Shih's Smiling Curve theory guided not only Acer's own transformation but influenced Taiwan's entire industrial learning path from 'contract manufacturing' toward 'brand innovation.'",
+    m4_case_lesson: "Lesson: Acer's transformation demonstrates the learning leap from exploitation to exploration, and the SECI knowledge spiral operating in strategic change. The Smiling Curve proposal itself is 'externalization'—converting tacit industry insight into widely influential explicit knowledge.",
+    m4_terms: [
+      { front: "SECI Model", back: "Nonaka & Takeuchi's knowledge conversion model: Socialization (tacit→tacit), Externalization (tacit→explicit), Combination (explicit→explicit), Internalization (explicit→tacit). The four modes form a continuously ascending knowledge spiral from individual to organizational levels." },
+      { front: "Exploration / Exploitation", back: "March (1991): the tension between exploration (pursuing new knowledge, experimentation, innovation) and exploitation (refining existing capabilities, efficiency, certainty). Organizations must balance both to avoid competency traps or resource dissipation." },
+      { front: "Learning Organization", back: "Senge's concept: an organization with continuous learning and self-transformation capability. Five disciplines: systems thinking, personal mastery, mental models, shared vision, team learning—with systems thinking as the integrating core ('fifth discipline')." }
+    ],
+    m4_q: [
+      { q: "In the SECI model, what knowledge conversion does 'Externalization' represent?", opts: ["Tacit→Tacit","Tacit→Explicit","Explicit→Explicit","Explicit→Tacit"], ans: 1, exp: "Externalization converts personal tacit knowledge (experience, intuition) into transmittable explicit knowledge through dialogue, metaphor, and models." },
+      { q: "What is March's 'competency trap'?", opts: ["Over-exploration causing resource dissipation","Over-exploiting existing capabilities while ignoring environmental change","Lacking core competencies","Learning too fast"], ans: 1, exp: "Competency trap occurs when organizations over-focus on exploitation of existing capabilities—good short-term performance but loss of ability to adapt to new environments long-term." },
+      { q: "According to Shih's Smiling Curve, which value chain segment has lowest added value?", opts: ["R&D & Design","Brand & Marketing","Manufacturing & Assembly","After-sales Service"], ans: 2, exp: "The Smiling Curve shows upstream (R&D/design) and downstream (brand/marketing/service) have high added value, while midstream (manufacturing/assembly) has the lowest." },
+      { q: "What is the core discipline in Senge's Learning Organization?", opts: ["Personal mastery","Mental models","Systems thinking","Team learning"], ans: 2, exp: "Senge identifies Systems Thinking as the integrating core of the other four disciplines, hence calling it 'The Fifth Discipline.'" },
+      { q: "Acer spinning off Wistron represents which learning strategy?", opts: ["Strengthening exploitation","Shifting from exploitation to exploration","Abandoning learning","Maintaining status quo"], ans: 1, exp: "Acer spun off manufacturing (exploitation) to Wistron and focused on brand management (exploration)—a classic shift from exploitation to exploration." },
+      { q: "In SECI, apprenticeship belongs to which conversion mode?", opts: ["Externalization","Combination","Socialization","Internalization"], ans: 2, exp: "Apprenticeship transmits a master's tacit knowledge to apprentices through observation, imitation, and practice—tacit→tacit socialization." },
+      { q: "Which is NOT one of Senge's five disciplines?", opts: ["Systems thinking","Benchmarking","Personal mastery","Shared vision"], ans: 1, exp: "The five disciplines are: systems thinking, personal mastery, mental models, shared vision, and team learning. Benchmarking is not among them." },
+      { q: "What does the 'ascending' knowledge spiral signify?", opts: ["Declining knowledge quality","Knowledge expanding from individual to team, organizational, inter-organizational levels","Knowledge becoming more tacit","Organization shrinking"], ans: 1, exp: "The SECI knowledge spiral ascending means knowledge creation expands from individual to team, department, organizational, and inter-organizational scope." }
+    ],
+
+    // M5
+    m5_nav: "5. Ambidexterity & Design",
+    m5_title: "Organizational Ambidexterity & Design",
+    m5_p1: "Organizational Ambidexterity refers to a firm's ability to simultaneously conduct exploration and exploitation. This is the core challenge of corporate sustainability: over-focusing on exploitation yields stable short-term performance but risks long-term obsolescence; over-emphasizing exploration brings innovation vitality but low resource efficiency. How to structurally, processually, and culturally support these two fundamentally different activity modes simultaneously is the ultimate organizational design challenge.",
+    m5_p2: "\"Successful firms are ambidextrous—they can simultaneously do well at both exploiting existing businesses and inventing future businesses.\" — O'Reilly & Tushman",
+    m5_p3: "Three main modes for achieving ambidexterity: (1) Structural Ambidexterity: separate exploration and exploitation units into different departments with independent structures, processes, and cultures, integrated by senior management team. (2) Contextual Ambidexterity: no structural separation; instead, organizational context (supportive + trusting cultural environment) empowers individuals to autonomously judge when to explore vs. exploit. (3) Sequential Ambidexterity: alternately emphasizing exploration or exploitation in different periods. The three pillars of organizational design—Structure, Control Systems, and Culture—must coordinate to support ambidexterity.",
+    m5_cards: [
+      { title: "Three Ambidexterity Modes", desc: "Structural: independent explore/exploit units + top management integration\nContextual: unified structure + individual autonomous switching between explore/exploit\nSequential: alternating emphasis on explore or exploit across different periods\nEach has applicable contexts and can be combined." },
+      { title: "Three Pillars of Organizational Design", desc: "Structure: departmentalization, hierarchy, reporting relationships — determines information flow & decision authority\nControl Systems: performance measurement, incentives, planning processes — coordinates goal alignment\nCulture: values, norms, behavioral patterns — shapes the foundation for autonomous employee behavior" }
+    ],
+    m5_case_title: "Micro Case: Foxconn MIH Platform — Structural Ambidexterity from Manufacturing Exploitation to EV Exploration",
+    m5_case: "Foxconn Technology Group has long been the world's largest electronics contract manufacturer, with core competence in large-scale, high-efficiency precision manufacturing (typical exploitation). In 2020, Foxconn Chairman Young Liu announced the establishment of MIH (Mobility in Harmony) open EV platform alliance—a bold structural ambidexterity design. The MIH platform operates as an independent exploration unit with fundamentally different organizational logic: open architecture (vs. contract manufacturing's closed customization), software-defined (vs. hardware-oriented), alliance ecosystem (vs. vertically integrated supply chain). Foxconn's approach perfectly embodies structural ambidexterity—MIH has independent teams, budgets, culture, and KPIs, unaffected by the parent's manufacturing 'exploitation logic,' while Young Liu's personal oversight provides top management integration, allowing MIH to leverage Foxconn's existing manufacturing infrastructure and supply chain management capabilities. As of 2025, the MIH alliance has gathered over 2,700 global members, launched the Model C (Foxtron LUXGEN n⁷) production vehicle, becoming Taiwan's most important open EV platform.",
+    m5_case_lesson: "Lesson: Foxconn MIH is a textbook case of structural ambidexterity—establishing an independent exploration unit pursuing EV innovation while maintaining manufacturing exploitation advantages, with top leadership integration. This demonstrates how traditional manufacturers can achieve ambidexterity through organizational design.",
+    m5_terms: [
+      { front: "Organizational Ambidexterity", back: "A firm's ability to simultaneously conduct exploration (innovation, experimentation) and exploitation (efficiency, refinement). O'Reilly & Tushman argue that successful long-lived firms must be ambidextrous—excelling at both current and future businesses." },
+      { front: "Structural Ambidexterity", back: "Achieving ambidexterity through structural separation of exploration and exploitation: establishing independent units with different structures, processes, cultures, and KPIs, integrated by senior management team." },
+      { front: "Contextual Ambidexterity", back: "Achieving ambidexterity without structural separation by creating a supportive organizational context (trust, autonomy, discipline, flexibility) that empowers individuals to autonomously judge when to explore vs. exploit. Relies on culture and leadership." }
+    ],
+    m5_q: [
+      { q: "What is the core challenge of organizational ambidexterity?", opts: ["Just do exploitation","Simultaneously conducting exploration and exploitation—two fundamentally different activities","Just do exploration","Shrinking the organization"], ans: 1, exp: "The core challenge is simultaneously supporting exploration (innovation) and exploitation (efficiency)—which differ fundamentally in logic, culture, and processes." },
+      { q: "What is the key integration mechanism in structural ambidexterity?", opts: ["Middle managers self-coordinate","Senior management team's cross-unit integration","Employees choose autonomously","External consultants intervene"], ans: 1, exp: "In structural ambidexterity, independent exploration and exploitation units must be integrated by the senior management team (usually the CEO)." },
+      { q: "What does contextual ambidexterity primarily rely on?", opts: ["Structural separation","Supportive organizational context & culture","Strict hierarchical control","External partnerships"], ans: 1, exp: "Contextual ambidexterity achieves balance without structural separation by creating a trusting, autonomous, disciplined organizational context that empowers individual switching." },
+      { q: "Which ambidexterity mode does Foxconn MIH represent?", opts: ["Contextual","Sequential","Structural","No ambidexterity"], ans: 2, exp: "MIH operates as an independent exploration unit, structurally separated from the manufacturing exploitation business, integrated by top leadership—typical structural ambidexterity." },
+      { q: "Which is NOT one of the three pillars of organizational design?", opts: ["Structure","Control systems","Culture","Market"], ans: 3, exp: "The three pillars are Structure, Control Systems, and Culture. Market is not an internal organizational design element." },
+      { q: "What's the risk of over-focusing on 'exploitation'?", opts: ["Resource dissipation","Stable short-term but long-term obsolescence","Too much innovation","Excessive flexibility"], ans: 1, exp: "Over-exploitation leads to 'competency trap'—stable short-term performance but lacking innovative capacity to adapt, risking long-term obsolescence." },
+      { q: "Key organizational logic difference between MIH and Foxconn's core business?", opts: ["They're identical","MIH uses open architecture, software-defined, alliance ecosystem","MIH focuses more on cost efficiency","MIH is larger in scale"], ans: 1, exp: "MIH uses open architecture, software-defined, alliance ecosystem logic—fundamentally different from Foxconn's closed customization, hardware-oriented, vertically integrated approach." },
+      { q: "What does sequential ambidexterity mean?", opts: ["Simultaneous parallel exploration and exploitation","Alternating emphasis on exploration or exploitation across different periods","Completely abandoning exploitation","Short-term strategy only"], ans: 1, exp: "Sequential ambidexterity means alternating focus between exploration (e.g., during transformation) and exploitation (e.g., during stable periods) at different times." }
+    ],
+
+    // M6
+    m6_nav: "6. Resources",
+    m6_title: "Extended Reading & External Resources",
+    m6_desc: "Selected classic literature, online resources, and educational videos related to dynamic capabilities and organizational learning for further exploration.",
+
+    // M7
+    mlab_nav: "7. Interactive Lab",
+    mlab_title: "Interactive Lab",
+    mlab_desc: "Experience core concepts of industry life cycle, dynamic capabilities, SECI knowledge conversion, and organizational ambidexterity through interactive simulators."
+  }
+};
+
+// === SVG Icons ===
+const IconBookOpen = ({size=24,className=""}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>;
+const IconGlobe = ({size=24,className=""}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>;
+const IconChevronRight = ({size=24,className=""}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="9 18 15 12 9 6"/></svg>;
+const IconChevronUp = ({size=24,className=""}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="18 15 12 9 6 15"/></svg>;
+const IconMenu = ({size=24,className=""}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>;
+const IconX = ({size=24,className=""}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>;
+const IconMoon = ({size=24,className=""}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>;
+const IconSun = ({size=24,className=""}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>;
+const IconPlay = ({size=24,className=""}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polygon points="5 3 19 12 5 21 5 3"/></svg>;
+const IconPause = ({size=24,className=""}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>;
+const IconSquare = ({size=24,className=""}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/></svg>;
+const IconArrowRight = ({size=24,className=""}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>;
+const IconExternalLink = ({size=24,className=""}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>;
+const IconBarChart2 = ({size=24,className=""}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>;
+const IconFlag = ({size=24,className=""}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>;
+const IconLayers = ({size=24,className=""}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>;
+const IconTrendingUp = ({size=24,className=""}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>;
+const IconZap = ({size=24,className=""}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>;
+const IconTarget = ({size=24,className=""}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>;
+const IconCpu = ({size=24,className=""}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect x="4" y="4" width="16" height="16" rx="2" ry="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/></svg>;
+const IconZapLab = ({size=24,className=""}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M9 3h6v5l3 3-3 3v5H9v-5l-3-3 3-3z"/></svg>;
+
+const TOTAL = 9;
+const N = 5;
+
+const FlipCard = ({ front, back, t }) => {
+  const [flipped, setFlipped] = useState(false);
+  return (
+    <div className="perspective cursor-pointer h-36" onClick={() => setFlipped(!flipped)}>
+      <div className={`transform-style-3d relative w-full h-full transition-transform duration-500 ${flipped ? 'rotate-y-180' : ''}`}>
+        <div className="backface-hidden absolute inset-0 bg-white dark:bg-slate-800 rounded-xl p-4 flex flex-col items-center justify-center border border-slate-200 dark:border-slate-700 shadow-sm">
+          <p className="font-serif font-bold text-center text-[#004030] dark:text-[#D8C3A5] text-sm">{front}</p>
+          <p className="text-xs text-slate-400 mt-2">{t.flip_prompt}</p>
+        </div>
+        <div className="backface-hidden rotate-y-180 absolute inset-0 bg-[#004030] dark:bg-slate-700 rounded-xl p-4 flex items-center justify-center">
+          <p className="text-sm text-center text-[#D8C3A5] dark:text-slate-200 leading-relaxed">{back}</p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const ModuleQuiz = ({ questions, t, moduleId, onQuizSubmit }) => {
+  const [selected, setSelected] = useState({});
+  const [submitted, setSubmitted] = useState(false);
+  const [quizIndices] = useState(() => [...Array(questions.length).keys()].sort(() => Math.random() - 0.5).slice(0, 4));
+  const handleSubmit = () => {
+    if (Object.keys(selected).length < quizIndices.length) return;
+    const c = quizIndices.filter((qIdx, i) => selected[i] === questions[qIdx].ans).length;
+    setSubmitted(true);
+    onQuizSubmit(moduleId, c, quizIndices.length);
+  };
+  const correctCount = submitted ? quizIndices.filter((qIdx, i) => selected[i] === questions[qIdx].ans).length : 0;
+  return (
+    <div className="mt-8 bg-slate-50 dark:bg-slate-900 rounded-2xl p-4 sm:p-6 border border-slate-200 dark:border-slate-700">
+      <h3 className="font-serif font-bold text-xl text-[#004030] dark:text-[#D8C3A5] mb-6 flex items-center"><IconBookOpen size={20} className="mr-2"/>{t.quiz_title}</h3>
+      {quizIndices.map((qIdx, qi) => {
+        const q = questions[qIdx];
+        return (
+          <div key={qIdx} className="mb-6">
+            <p className="font-semibold text-slate-800 dark:text-slate-200 mb-3">{qi+1}. {q.q}</p>
+            <div className="space-y-2">{q.opts.map((opt, oi) => {
+              let cls = "w-full text-left px-4 py-2.5 rounded-lg border text-sm transition-colors ";
+              if (!submitted) cls += selected[qi] === oi ? "border-[#004030] bg-[#004030]/10 dark:bg-[#D8C3A5]/10 text-[#004030] dark:text-[#D8C3A5] font-semibold" : "border-slate-200 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300";
+              else if (oi === q.ans) cls += "border-green-500 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 font-semibold";
+              else if (selected[qi] === oi) cls += "border-red-400 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400";
+              else cls += "border-slate-200 dark:border-slate-600 text-slate-500";
+              return <button key={oi} onClick={() => !submitted && setSelected(s=>({...s,[qi]:oi}))} className={cls}>{opt}</button>;
+            })}</div>
+            {submitted && <p className="mt-2 text-sm text-slate-600 dark:text-slate-400 italic">{t.explanation}: {q.exp}</p>}
+          </div>
+        );
+      })}
+      {!submitted ? (
+        <button onClick={handleSubmit} disabled={Object.keys(selected).length < quizIndices.length}
+          className="px-6 py-2.5 bg-[#004030] dark:bg-[#D8C3A5] text-white dark:text-[#004030] font-bold rounded-lg disabled:opacity-40 hover:bg-[#002b20] transition-colors">{t.submit}</button>
+      ) : (
+        <div className="flex items-center space-x-4">
+          <span className="font-bold text-lg text-[#004030] dark:text-[#D8C3A5]">{t.score}: {correctCount}/{quizIndices.length}</span>
+          <button onClick={() => { setSelected({}); setSubmitted(false); }} className="px-4 py-2 border border-[#004030] dark:border-[#D8C3A5] text-[#004030] dark:text-[#D8C3A5] rounded-lg hover:bg-[#004030]/10 text-sm font-semibold transition-colors">{t.retry}</button>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const LinkCard = ({label, url, desc}) => (
+  <a href={url} target="_blank" rel="noopener noreferrer" className="block bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700 hover:border-[#004030] dark:hover:border-[#D8C3A5] hover:shadow-md transition-all group">
+    <div className="flex items-start justify-between gap-2 mb-2">
+      <span className="font-bold font-serif text-sm text-[#004030] dark:text-[#D8C3A5] group-hover:underline leading-snug">{label}</span>
+      <IconExternalLink size={14} className="shrink-0 mt-1 opacity-40 group-hover:opacity-100"/>
+    </div>
+    <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">{desc}</p>
+  </a>
+);
+
+// === Lab Components (top-level, outside App) ===
+const LifecycleLab = ({lang}) => {
+  const [stage, setStage] = useState(1);
+  const stages = lang==='zh'
+    ? [{n:'萌芽期',kf:'產品創新',d:'低',c:'少數先驅',inv:'高風險'},{n:'成長期',kf:'設計與製程創新',d:'快速增長',c:'大量進入',inv:'產能擴張'},{n:'成熟期',kf:'成本效率',d:'飽和',c:'穩定寡佔',inv:'效率投資'},{n:'衰退期',kf:'合理化',d:'萎縮',c:'退出整併',inv:'收割/退出'}]
+    : [{n:'Embryonic',kf:'Product Innovation',d:'Low',c:'Few pioneers',inv:'High risk'},{n:'Growth',kf:'Design & Process Innovation',d:'Rapid growth',c:'Many entrants',inv:'Capacity expansion'},{n:'Maturity',kf:'Cost Efficiency',d:'Saturated',c:'Stable oligopoly',inv:'Efficiency investment'},{n:'Decline',kf:'Rationalization',d:'Shrinking',c:'Exit/consolidation',inv:'Harvest/exit'}];
+  const s = stages[stage];
+  const curve = [10,45,80,60];
+  return (
+    <div className="bg-white dark:bg-slate-800 rounded-xl p-6 border border-slate-200 dark:border-slate-700">
+      <h4 className="font-serif font-bold text-lg text-[#004030] dark:text-[#D8C3A5] mb-4">{lang==='zh'?'產業生命週期探索器':'Industry Life Cycle Explorer'}</h4>
+      <div className="flex justify-between mb-4">{stages.map((st,i)=>(
+        <button key={i} onClick={()=>setStage(i)} className={`px-2 py-1 text-xs rounded-full transition-colors ${stage===i?'bg-[#004030] text-white dark:bg-[#D8C3A5] dark:text-[#004030]':'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-400'}`}>{st.n}</button>
+      ))}</div>
+      <div className="flex items-end h-24 gap-1 mb-4">{curve.map((v,i)=>(
+        <div key={i} className={`flex-1 rounded-t transition-all ${stage===i?'bg-[#004030] dark:bg-[#D8C3A5]':'bg-slate-200 dark:bg-slate-700'}`} style={{height:`${v}%`}}/>
+      ))}</div>
+      <div className="p-4 bg-slate-100 dark:bg-slate-700 rounded-lg space-y-2">
+        <p className="text-sm"><span className="font-bold">{lang==='zh'?'階段':'Stage'}:</span> {s.n}</p>
+        <p className="text-sm"><span className="font-bold">KSF:</span> {s.kf}</p>
+        <p className="text-sm"><span className="font-bold">{lang==='zh'?'需求':'Demand'}:</span> {s.d}</p>
+        <p className="text-sm"><span className="font-bold">{lang==='zh'?'競爭':'Competition'}:</span> {s.c}</p>
+        <p className="text-sm"><span className="font-bold">{lang==='zh'?'投資策略':'Investment'}:</span> {s.inv}</p>
+      </div>
+    </div>
+  );
+};
+
+const DynamicCapLab = ({lang}) => {
+  const [sensing, setSensing] = useState(50);
+  const [seizing, setSeizing] = useState(50);
+  const [transforming, setTransforming] = useState(50);
+  const dcIndex = Math.round((sensing*0.35+seizing*0.35+transforming*0.3));
+  const level = dcIndex>=75?(lang==='zh'?'卓越 — 持續領先':'Excellent — Sustained Leadership'):dcIndex>=50?(lang==='zh'?'良好 — 具適應力':'Good — Adaptive'):dcIndex>=25?(lang==='zh'?'待強化 — 易受衝擊':'Needs Strengthening'):(lang==='zh'?'危險 — 高度僵化':'Critical — Highly Rigid');
+  return (
+    <div className="bg-white dark:bg-slate-800 rounded-xl p-6 border border-slate-200 dark:border-slate-700">
+      <h4 className="font-serif font-bold text-lg text-[#004030] dark:text-[#D8C3A5] mb-4">{lang==='zh'?'動態能力評估器':'Dynamic Capability Assessor'}</h4>
+      <div className="space-y-4">
+        <div><label className="text-sm font-bold">{lang==='zh'?'感知能力 Sensing':'Sensing Capability'}: {sensing}%</label>
+          <input type="range" min="0" max="100" value={sensing} onChange={e=>setSensing(+e.target.value)} className="w-full accent-[#004030]"/></div>
+        <div><label className="text-sm font-bold">{lang==='zh'?'捕獲能力 Seizing':'Seizing Capability'}: {seizing}%</label>
+          <input type="range" min="0" max="100" value={seizing} onChange={e=>setSeizing(+e.target.value)} className="w-full accent-[#004030]"/></div>
+        <div><label className="text-sm font-bold">{lang==='zh'?'轉型能力 Transforming':'Transforming Capability'}: {transforming}%</label>
+          <input type="range" min="0" max="100" value={transforming} onChange={e=>setTransforming(+e.target.value)} className="w-full accent-[#004030]"/></div>
+      </div>
+      <div className="mt-4 p-4 bg-slate-100 dark:bg-slate-700 rounded-lg text-center">
+        <p className="text-sm">{lang==='zh'?'動態能力指數':'DC Index'}: <span className="font-bold text-2xl text-[#004030] dark:text-[#D8C3A5]">{dcIndex}/100</span></p>
+        <p className="text-xs text-slate-500 mt-1">{level}</p>
+      </div>
+    </div>
+  );
+};
+
+const SECILab = ({lang}) => {
+  const [mode, setMode] = useState(0);
+  const modes = lang==='zh'
+    ? [{n:'社會化',from:'隱性',to:'隱性',ex:'師徒制、現場觀察、共同經驗',color:'bg-blue-500'},{n:'外化',from:'隱性',to:'顯性',ex:'比喻、概念化、模型建立、對話',color:'bg-green-500'},{n:'組合化',from:'顯性',to:'顯性',ex:'資料庫整合、報告彙整、知識系統',color:'bg-yellow-500'},{n:'內化',from:'顯性',to:'隱性',ex:'做中學、模擬訓練、實作演練',color:'bg-red-500'}]
+    : [{n:'Socialization',from:'Tacit',to:'Tacit',ex:'Apprenticeship, on-site observation, shared experience',color:'bg-blue-500'},{n:'Externalization',from:'Tacit',to:'Explicit',ex:'Metaphor, conceptualization, model-building, dialogue',color:'bg-green-500'},{n:'Combination',from:'Explicit',to:'Explicit',ex:'Database integration, report compilation, knowledge systems',color:'bg-yellow-500'},{n:'Internalization',from:'Explicit',to:'Tacit',ex:'Learning-by-doing, simulation training, hands-on practice',color:'bg-red-500'}];
+  const m = modes[mode];
+  return (
+    <div className="bg-white dark:bg-slate-800 rounded-xl p-6 border border-slate-200 dark:border-slate-700">
+      <h4 className="font-serif font-bold text-lg text-[#004030] dark:text-[#D8C3A5] mb-4">{lang==='zh'?'SECI 知識轉化探索器':'SECI Knowledge Conversion Explorer'}</h4>
+      <div className="grid grid-cols-2 gap-2 mb-4">{modes.map((md,i)=>(
+        <button key={i} onClick={()=>setMode(i)} className={`px-3 py-2 rounded-lg text-sm font-bold transition-colors ${mode===i?'bg-[#004030] text-white dark:bg-[#D8C3A5] dark:text-[#004030]':'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400'}`}>{md.n}</button>
+      ))}</div>
+      <div className="p-4 bg-slate-100 dark:bg-slate-700 rounded-lg">
+        <div className="flex items-center justify-center gap-4 mb-3">
+          <div className="px-3 py-1 bg-slate-300 dark:bg-slate-600 rounded text-sm font-bold">{m.from}</div>
+          <span className="text-xl">→</span>
+          <div className={`px-3 py-1 ${m.color} text-white rounded text-sm font-bold`}>{m.to}</div>
+        </div>
+        <p className="text-sm text-center"><span className="font-bold">{lang==='zh'?'範例':'Examples'}:</span> {m.ex}</p>
+      </div>
+    </div>
+  );
+};
+
+const AmbidexterityLab = ({lang}) => {
+  const [explore, setExplore] = useState(50);
+  const exploit = 100 - explore;
+  const balance = 100 - Math.abs(explore - exploit);
+  const status = balance >= 80 ? (lang==='zh'?'高度雙元 — 最佳平衡':'Highly Ambidextrous — Optimal Balance') : balance >= 50 ? (lang==='zh'?'中度雙元 — 尚可':'Moderately Ambidextrous') : explore > exploit ? (lang==='zh'?'過度探索 — 資源耗散風險':'Over-Exploring — Resource Dissipation Risk') : (lang==='zh'?'過度利用 — 能力陷阱風險':'Over-Exploiting — Competency Trap Risk');
+  return (
+    <div className="bg-white dark:bg-slate-800 rounded-xl p-6 border border-slate-200 dark:border-slate-700">
+      <h4 className="font-serif font-bold text-lg text-[#004030] dark:text-[#D8C3A5] mb-4">{lang==='zh'?'組織雙元性模擬器':'Ambidexterity Simulator'}</h4>
+      <div className="mb-4">
+        <label className="text-sm font-bold">{lang==='zh'?'探索 ← → 利用':'Explore ← → Exploit'}</label>
+        <input type="range" min="0" max="100" value={explore} onChange={e=>setExplore(+e.target.value)} className="w-full accent-[#004030]"/>
+        <div className="flex justify-between text-xs text-slate-500"><span>{lang==='zh'?'探索':'Explore'}: {explore}%</span><span>{lang==='zh'?'利用':'Exploit'}: {exploit}%</span></div>
+      </div>
+      <div className="grid grid-cols-2 gap-3 mb-4">
+        <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg text-center">
+          <div className="text-2xl font-bold text-blue-600">{explore}%</div>
+          <div className="text-xs text-slate-500">{lang==='zh'?'探索':'Exploration'}</div>
+        </div>
+        <div className="p-3 bg-orange-50 dark:bg-orange-900/20 rounded-lg text-center">
+          <div className="text-2xl font-bold text-orange-600">{exploit}%</div>
+          <div className="text-xs text-slate-500">{lang==='zh'?'利用':'Exploitation'}</div>
+        </div>
+      </div>
+      <div className="p-3 bg-slate-100 dark:bg-slate-700 rounded-lg text-center">
+        <p className="text-sm">{lang==='zh'?'雙元性指數':'Ambidexterity Index'}: <span className="font-bold text-lg text-[#004030] dark:text-[#D8C3A5]">{balance}/100</span></p>
+        <p className="text-xs text-slate-500 mt-1">{status}</p>
+      </div>
+    </div>
+  );
+};
+
+
+function App() {
+  const [lang, setLang] = useState('zh');
+  const [isDark, setIsDark] = useState(false);
+  const [module, setModule] = useState(0);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef(null);
+  useEffect(() => { if (!menuOpen) return; const h = e => { if (menuRef.current && !menuRef.current.contains(e.target)) setMenuOpen(false); }; document.addEventListener('mousedown', h); return () => document.removeEventListener('mousedown', h); }, [menuOpen]);
+  const [ttsState, setTtsState] = useState('idle');
+  const [studentInfo, setStudentInfo] = useState({ group:'', dept:'', id:'', name:'' });
+  const [analytics, setAnalytics] = useState({ time: Array(N).fill(0), clicks: Array(N).fill(0), quizCorrect: Array(N).fill(0), quizTotal: Array(N).fill(0) });
+  const contentRef = useRef(null);
+  const timerRef = useRef(null);
+  const t = dict[lang];
+
+  useEffect(() => { isDark ? document.documentElement.classList.add('dark') : document.documentElement.classList.remove('dark'); }, [isDark]);
+  useEffect(() => {
+    window.speechSynthesis && window.speechSynthesis.cancel(); setTtsState('idle');
+    window.scrollTo({top:0,behavior:'smooth'});
+    if (timerRef.current) clearInterval(timerRef.current);
+    const mi = module - 1;
+    if (mi >= 0 && mi < N) { timerRef.current = setInterval(() => { setAnalytics(a => { const t2 = [...a.time]; t2[mi]++; return {...a, time: t2}; }); }, 1000); }
+    return () => clearInterval(timerRef.current);
+  }, [module]);
+
+  const handleClick = () => { const mi = module - 1; if (mi >= 0 && mi < N) setAnalytics(a => { const c = [...a.clicks]; c[mi]++; return {...a, clicks: c}; }); };
+  const handleQuizSubmit = (modId, correct, total) => { const mi = modId - 1; if (mi >= 0 && mi < N) setAnalytics(a => { const qc=[...a.quizCorrect]; const qt=[...a.quizTotal]; qc[mi]=correct; qt[mi]=total; return {...a, quizCorrect:qc, quizTotal:qt}; }); };
+
+  const handleTTS = (action) => {
+    if (!('speechSynthesis' in window)) return;
+    if (action === 'stop') { window.speechSynthesis.cancel(); setTtsState('idle'); return; }
+    if (action === 'pause') { window.speechSynthesis.pause(); setTtsState('paused'); return; }
+    if (action === 'play') {
+      if (ttsState === 'paused') { window.speechSynthesis.resume(); setTtsState('playing'); return; }
+      window.speechSynthesis.cancel();
+      const sep = lang === 'zh' ? '。 ' : '. ';
+      let texts = [];
+      if (module === 0) { texts = [t.m0_title, t.m0_intro, t.m0_why, t.m0_why_desc].filter(Boolean); }
+      else if (module >= 1 && module <= N) {
+        const mk = `m${module}`;
+        texts = [t[`${mk}_title`],t[`${mk}_p1`],t[`${mk}_p2`],t[`${mk}_p3`],...(t[`${mk}_cards`]||[]).map(c=>`${c.title}. ${c.desc}`),...(t[`${mk}_terms`]||[]).flatMap(term=>[term.front,term.back]),t[`${mk}_case_title`],t[`${mk}_case`],t[`${mk}_case_lesson`]].filter(Boolean);
+      } else if (module === N+1) { texts = [t.m6_title, t.m6_desc]; }
+      else if (module === N+2) { texts = [t.mlab_title, t.mlab_desc]; }
+      else { texts = [t.analytics_title, t.analytics_desc]; }
+      const text = texts.filter(Boolean).join(sep);
+      const utterance = new SpeechSynthesisUtterance(text); utterance.rate = 0.95;
+      const voices = window.speechSynthesis.getVoices();
+      if (lang === 'zh') { const v = voices.find(v=>v.lang==='zh-TW'&&v.name.includes('Yating'))||voices.find(v=>v.lang==='zh-TW')||voices.find(v=>v.lang.startsWith('zh')); if(v)utterance.voice=v; utterance.lang='zh-TW'; }
+      else { const v = voices.find(v=>v.lang==='en-GB'&&v.name.includes('Daniel'))||voices.find(v=>v.lang==='en-GB')||voices.find(v=>v.lang.startsWith('en')); if(v)utterance.voice=v; utterance.lang='en-GB'; }
+      utterance.onend = () => setTtsState('idle'); utterance.onerror = () => setTtsState('idle');
+      window.speechSynthesis.speak(utterance); setTtsState('playing');
+    }
+  };
+
+  const handleExportCSV = () => {
+    const BOM = '\uFEFF';
+    const mNavKeys = ['m1_nav','m2_nav','m3_nav','m4_nav','m5_nav'];
+    const rows = [[t.analytics_group,t.analytics_dept,t.analytics_id,t.analytics_name],[studentInfo.group,studentInfo.dept,studentInfo.id,studentInfo.name],[],[t.analytics_module,t.analytics_time,t.analytics_clicks,t.analytics_acc,t.analytics_correct_ans_total],
+      ...Array.from({length:N},(_,i)=>{const acc=analytics.quizTotal[i]>0?Math.round(analytics.quizCorrect[i]/analytics.quizTotal[i]*100)+'%':t.analytics_no_data;const ans=analytics.quizTotal[i]>0?`${analytics.quizCorrect[i]}/${analytics.quizTotal[i]}/8`:t.analytics_no_data;return[t[mNavKeys[i]],analytics.time[i]+t.analytics_sec,analytics.clicks[i]+t.analytics_times,acc,ans];})];
+    const csv = BOM + rows.map(r=>r.join(',')).join('\n');
+    const a = document.createElement('a'); a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv); a.download='learning_analytics.csv'; a.click();
+  };
+
+  const modulesList = [
+    {id:0,icon:<IconFlag size={16}/>,title:t.m0_nav},
+    {id:1,icon:<IconTrendingUp size={16}/>,title:t.m1_nav},
+    {id:2,icon:<IconLayers size={16}/>,title:t.m2_nav},
+    {id:3,icon:<IconZap size={16}/>,title:t.m3_nav},
+    {id:4,icon:<IconTarget size={16}/>,title:t.m4_nav},
+    {id:5,icon:<IconCpu size={16}/>,title:t.m5_nav},
+    {id:6,icon:<IconGlobe size={16}/>,title:t.m6_nav},
+    {id:7,icon:<IconZapLab size={16}/>,title:t.mlab_nav},
+    {id:8,icon:<IconBarChart2 size={16}/>,title:t.analytics_title}
+  ];
+
+  const renderNavBottom = () => (
+    <div className="mt-12 flex justify-between items-center pt-8 border-t border-slate-300 dark:border-slate-700">
+      <button onClick={()=>setModule(Math.max(0,module-1))} disabled={module===0} className="px-6 py-3 font-serif font-bold text-slate-500 hover:text-[#004030] dark:hover:text-[#D8C3A5] disabled:opacity-0 transition-colors flex items-center uppercase text-sm tracking-wider">← {t.nav_prev}</button>
+      <button onClick={()=>setModule(Math.min(TOTAL-1,module+1))} disabled={module===TOTAL-1} className="px-8 py-3 bg-[#004030] dark:bg-[#D8C3A5] text-white dark:text-[#004030] font-serif font-bold hover:bg-[#002b20] disabled:opacity-0 transition-colors flex items-center uppercase text-sm tracking-wider shadow-md">{t.nav_next} <IconArrowRight size={16} className="ml-2"/></button>
+    </div>
+  );
+
+  const H2 = ({children}) => <h2 className="text-2xl sm:text-3xl md:text-4xl font-serif font-black text-[#004030] dark:text-[#D8C3A5] border-b-2 border-[#D8C3A5] pb-4">{children}</h2>;
+  const fade = "animate-fade-in";
+  const base = `space-y-6 text-base leading-relaxed text-slate-700 dark:text-slate-300 ${fade}`;
+
+  const renderModule = (num) => {
+    const mk = `m${num}`;
+    return (
+      <div className={base}>
+        <H2>{t[`${mk}_title`]}</H2>
+        <p>{t[`${mk}_p1`]}</p>
+        <p className="p-4 bg-slate-100 dark:bg-slate-800 rounded-lg italic font-serif text-slate-600 dark:text-slate-300">{t[`${mk}_p2`]}</p>
+        <p>{t[`${mk}_p3`]}</p>
+        <div className="grid md:grid-cols-2 gap-6">{t[`${mk}_cards`].map((c,i)=>(
+          <div key={i} className="bg-white dark:bg-slate-800 p-6 rounded-xl border-l-4 border-[#004030] shadow-sm hover:shadow-md transition-shadow">
+            <h3 className="text-lg font-bold font-serif text-[#004030] dark:text-[#D8C3A5] mb-2">{c.title}</h3>
+            <p className="text-sm whitespace-pre-line">{c.desc}</p>
+          </div>
+        ))}</div>
+        <div className="bg-[#004030] text-white dark:bg-slate-700 p-6 rounded-xl shadow-md">
+          <h3 className="font-serif font-bold text-lg text-[#D8C3A5] mb-3">{t[`${mk}_case_title`]}</h3>
+          <p className="text-sm leading-relaxed text-[#D8C3A5]/90 mb-4">{t[`${mk}_case`]}</p>
+          <div className="bg-white/10 rounded-lg p-4">
+            <p className="text-sm font-bold text-[#D8C3A5]">{t[`${mk}_case_lesson`]}</p>
+          </div>
+        </div>
+        <div className="mt-8"><h3 className="text-sm font-bold uppercase tracking-wider text-slate-500 mb-4">{t.key_terms}</h3>
+        <div key={`terms-${module}`} className="grid grid-cols-1 md:grid-cols-3 gap-4">{t[`${mk}_terms`].map((term,i)=><FlipCard key={i} front={term.front} back={term.back} t={t}/>)}</div></div>
+        <ModuleQuiz key={`quiz-${module}`} questions={t[`${mk}_q`]} t={t} moduleId={num} onQuizSubmit={handleQuizSubmit}/>
+        {renderNavBottom()}
+      </div>
+    );
+  };
+
+  const renderResources = () => {
+    const links = [
+      {label:lang==='zh'?'Teece (1997) Dynamic Capabilities 經典論文':'Teece (1997) Dynamic Capabilities Classic Paper',url:'https://onlinelibrary.wiley.com/doi/abs/10.1002/(SICI)1097-0266(199708)18:7%3C509::AID-SMJ882%3E3.0.CO;2-Z',desc:lang==='zh'?'Strategic Management Journal 最高引用論文之一':'One of the most cited papers in Strategic Management Journal'},
+      {label:lang==='zh'?'Nonaka (1994) 知識創造理論':'Nonaka (1994) Knowledge-Creating Theory',url:'https://pubsonline.informs.org/doi/abs/10.1287/orsc.5.1.14',desc:lang==='zh'?'SECI 模型的理論基礎':'Theoretical foundation of the SECI model'},
+      {label:lang==='zh'?'Senge《第五項修練》':'Senge - The Fifth Discipline',url:'https://www.amazon.com/Fifth-Discipline-Practice-Learning-Organization/dp/0385517254',desc:lang==='zh'?'學習型組織的經典著作':'The classic work on learning organizations'},
+      {label:lang==='zh'?'March (1991) Exploration and Exploitation':'March (1991) Exploration and Exploitation',url:'https://pubsonline.informs.org/doi/abs/10.1287/orsc.2.1.71',desc:lang==='zh'?'探索與利用平衡的開創性論文':'Pioneering paper on exploration-exploitation balance'},
+    ];
+    const otherLinks = [
+      {icon:'🏭',cat:lang==='zh'?'台灣產業案例':'Taiwan Industry Cases',items:[
+        {label:lang==='zh'?'台積電動態能力分析（哈佛商業評論）':'TSMC Dynamic Capabilities (HBR)',url:'https://www.hbrtaiwan.com',desc:lang==='zh'?'台積電如何以動態能力維持全球領先':'How TSMC maintains global leadership through dynamic capabilities'},
+        {label:lang==='zh'?'宏碁微笑曲線的演變':'Acer Smiling Curve Evolution',url:'https://www.acer.com',desc:lang==='zh'?'從 OEM 到品牌的轉型歷程':'The transformation journey from OEM to brand'},
+      ]},
+      {icon:'📚',cat:lang==='zh'?'學術資源':'Academic Resources',items:[
+        {label:lang==='zh'?'O\'Reilly & Tushman: 組織雙元性':'O\'Reilly & Tushman: Ambidexterity',url:'https://hbr.org/2004/04/the-ambidextrous-organization',desc:lang==='zh'?'Harvard Business Review 雙元組織的經典文章':'Classic HBR article on ambidextrous organizations'},
+        {label:lang==='zh'?'Prahalad & Hamel: 核心能耐':'Prahalad & Hamel: Core Competence',url:'https://hbr.org/1990/05/the-core-competence-of-the-corporation',desc:lang==='zh'?'HBR 1990 經典論文':'HBR 1990 classic paper'},
+      ]},
+    ];
+    return (
+      <div className={`space-y-10 ${fade}`}>
+        <H2>{t.m6_title}</H2>
+        <p className="text-slate-500 dark:text-slate-400">{t.m6_desc}</p>
+        <div className="grid md:grid-cols-2 gap-3">{links.map((l,i)=><LinkCard key={i} {...l}/>)}</div>
+        {otherLinks.map((sec,si)=>(
+          <div key={si}>
+            <h3 className="flex items-center gap-2 text-base font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wide mb-3"><span>{sec.icon}</span>{sec.cat}</h3>
+            <div className="grid md:grid-cols-2 gap-3">{sec.items.map((l,i)=><LinkCard key={i} {...l}/>)}</div>
+          </div>
+        ))}
+        <div className="bg-[#004030]/5 dark:bg-[#D8C3A5]/5 rounded-xl p-5 border border-[#004030]/20 dark:border-[#D8C3A5]/20">
+          <p className="text-sm text-slate-600 dark:text-slate-400">{lang==='zh'?'⚠️ 以上連結為外部資源，內容由原始作者維護，僅供學術參考之用。':'⚠️ External links maintained by original authors. For academic reference only.'}</p>
+        </div>
+        {renderNavBottom()}
+      </div>
+    );
+  };
+
+  const renderLab = () => (
+    <div className={`space-y-8 ${fade}`}>
+      <H2>{t.mlab_title}</H2>
+      <p className="text-slate-600 dark:text-slate-400">{t.mlab_desc}</p>
+      <LifecycleLab lang={lang}/>
+      <div className="grid md:grid-cols-2 gap-6">
+        <DynamicCapLab lang={lang}/>
+        <SECILab lang={lang}/>
+      </div>
+      <AmbidexterityLab lang={lang}/>
+      {renderNavBottom()}
+    </div>
+  );
+
+  const renderContent = () => {
+    if (module === 0) return (
+      <div className={`space-y-8 text-lg leading-relaxed text-slate-700 dark:text-slate-300 ${fade}`}>
+        <div className="bg-[#004030] dark:bg-slate-800 rounded-2xl p-6 sm:p-8 text-white">
+          <p className="text-xs font-bold uppercase tracking-widest text-[#D8C3A5] mb-3">{lang==='zh'?'課程簡介':'Course Introduction'}</p>
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-serif font-black text-white mb-4">{t.m0_title}</h2>
+          <p className="text-[#D8C3A5]/90 text-base leading-relaxed">{t.m0_intro}</p>
+        </div>
+        <div className="bg-white dark:bg-slate-800 rounded-xl p-6 border-l-4 border-[#D8C3A5] shadow-sm">
+          <h3 className="text-xl font-bold font-serif text-[#004030] dark:text-[#D8C3A5] mb-3">{t.m0_why}</h3>
+          <p className="text-base">{t.m0_why_desc}</p>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">{t.m0_stats.map((s,i)=>(
+          <div key={i} className="bg-white dark:bg-slate-800 rounded-xl p-5 text-center shadow-sm border border-slate-200 dark:border-slate-700">
+            <div className="text-2xl md:text-3xl font-black font-serif text-[#004030] dark:text-[#D8C3A5] mb-1">{s.val}</div>
+            <div className="text-xs text-slate-500 dark:text-slate-400">{s.label}</div>
+          </div>
+        ))}</div>
+        <div>
+          <h3 className="text-lg font-bold uppercase tracking-wider text-slate-500 mb-4">{lang==='zh'?'課程模組':'Course Modules'}</h3>
+          <div className="space-y-3">{t.m0_modules.map((m,i)=>(
+            <button key={i} onClick={()=>setModule(i+1)} className="w-full flex items-center gap-5 bg-white dark:bg-slate-800 rounded-xl px-6 py-4 border border-slate-200 dark:border-slate-700 hover:border-[#004030] dark:hover:border-[#D8C3A5] hover:shadow-md transition-all text-left group">
+              <div className="text-3xl font-black font-serif text-[#D8C3A5] w-10 shrink-0">{m.num}</div>
+              <div className="flex-1"><div className="font-bold font-serif text-[#004030] dark:text-[#D8C3A5] mb-1">{m.title}</div><div className="text-sm text-slate-500">{m.desc}</div></div>
+              <IconChevronRight size={20} className="text-slate-300 group-hover:text-[#004030] dark:group-hover:text-[#D8C3A5] shrink-0"/>
+            </button>
+          ))}</div>
+        </div>
+        <div className="flex justify-end">
+          <button onClick={()=>setModule(1)} className="px-8 py-3 bg-[#004030] dark:bg-[#D8C3A5] text-white dark:text-[#004030] font-serif font-bold hover:bg-[#002b20] rounded-lg shadow-md">{t.m0_start}</button>
+        </div>
+      </div>
+    );
+    if (module >= 1 && module <= N) return renderModule(module);
+    if (module === N+1) return renderResources();
+    if (module === N+2) return renderLab();
+    if (module === N+3) {
+      const totalTime = analytics.time.reduce((a,b)=>a+b,0);
+      const totalClicks = analytics.clicks.reduce((a,b)=>a+b,0);
+      const totalCorrect = analytics.quizCorrect.reduce((a,b)=>a+b,0);
+      const totalAnswered = analytics.quizTotal.reduce((a,b)=>a+b,0);
+      const overallAcc = totalAnswered > 0 ? Math.round(totalCorrect/totalAnswered*100)+'%' : t.analytics_no_data;
+      const canExport = studentInfo.group && studentInfo.dept && studentInfo.id && studentInfo.name;
+      const mNavKeys = ['m1_nav','m2_nav','m3_nav','m4_nav','m5_nav'];
+      return (
+        <div className={base}>
+          <H2>{t.analytics_title}</H2>
+          <p className="text-slate-500 dark:text-slate-400">{t.analytics_desc}</p>
+          <div className="grid grid-cols-3 gap-4">{[{label:t.analytics_total_time,val:totalTime+t.analytics_sec},{label:t.analytics_total_clicks,val:totalClicks+t.analytics_times},{label:t.analytics_overall_acc,val:overallAcc}].map((s,i)=>(
+            <div key={i} className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700 text-center shadow-sm">
+              <p className="text-2xl font-black font-serif text-[#004030] dark:text-[#D8C3A5]">{s.val}</p>
+              <p className="text-xs text-slate-500 mt-1">{s.label}</p>
+            </div>
+          ))}</div>
+          <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm">
+            <table className="w-full text-sm"><thead><tr className="bg-[#004030] text-[#D8C3A5]">
+              <th className="text-left p-3">{t.analytics_module}</th><th className="text-center p-3">{t.analytics_time}</th><th className="text-center p-3">{t.analytics_clicks}</th><th className="text-center p-3">{t.analytics_acc}</th><th className="text-center p-3 hidden md:table-cell">{t.analytics_correct_ans_total}</th>
+            </tr></thead><tbody>{Array.from({length:N},(_,i)=>{
+              const acc=analytics.quizTotal[i]>0?Math.round(analytics.quizCorrect[i]/analytics.quizTotal[i]*100)+'%':t.analytics_no_data;
+              const ans=analytics.quizTotal[i]>0?`${analytics.quizCorrect[i]}/${analytics.quizTotal[i]}/8`:t.analytics_no_data;
+              return <tr key={i} className="border-t border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/50"><td className="p-3 font-medium text-[#004030] dark:text-[#D8C3A5]">{t[mNavKeys[i]]}</td><td className="p-3 text-center">{analytics.time[i]}{t.analytics_sec}</td><td className="p-3 text-center">{analytics.clicks[i]}{t.analytics_times}</td><td className="p-3 text-center">{acc}</td><td className="p-3 text-center hidden md:table-cell">{ans}</td></tr>;
+            })}</tbody></table>
+          </div>
+          <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6 shadow-sm">
+            <h3 className="font-serif font-bold text-lg text-[#004030] dark:text-[#D8C3A5] mb-4">{t.analytics_form_title}</h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div><label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">{t.analytics_group}</label>
+                <select value={studentInfo.group} onChange={e=>setStudentInfo({...studentInfo,group:e.target.value})} className="w-full border border-slate-200 dark:border-slate-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200"><option value="">--</option>{t.group_options.map(g=><option key={g} value={g}>{g}</option>)}</select></div>
+              <div><label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">{t.analytics_dept}</label>
+                <input value={studentInfo.dept} onChange={e=>setStudentInfo({...studentInfo,dept:e.target.value})} placeholder={t.analytics_dept_ph} className="w-full border border-slate-200 dark:border-slate-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200"/></div>
+              <div><label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">{t.analytics_id}</label>
+                <input value={studentInfo.id} onChange={e=>setStudentInfo({...studentInfo,id:e.target.value})} placeholder={t.analytics_id_ph} className="w-full border border-slate-200 dark:border-slate-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200"/></div>
+              <div><label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">{t.analytics_name}</label>
+                <input value={studentInfo.name} onChange={e=>setStudentInfo({...studentInfo,name:e.target.value})} placeholder={t.analytics_name_ph} className="w-full border border-slate-200 dark:border-slate-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200"/></div>
+            </div>
+            <button onClick={handleExportCSV} disabled={!canExport} className="mt-4 px-6 py-2.5 bg-[#004030] dark:bg-[#D8C3A5] text-white dark:text-[#004030] font-bold rounded-lg disabled:opacity-40 hover:bg-[#002b20] transition-colors text-sm">{canExport?t.analytics_export_csv:t.analytics_fill_required}</button>
+          </div>
+          {renderNavBottom()}
+        </div>
+      );
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-[#f4f4f4] dark:bg-[#121212] font-sans selection:bg-[#004030] selection:text-white dark:selection:bg-[#D8C3A5] dark:selection:text-[#004030] flex flex-col overflow-x-hidden pt-16">
+      <header className="fixed top-0 left-0 right-0 h-16 bg-[#004030] dark:bg-slate-900 text-white z-50 shadow-lg border-b border-[#D8C3A5]/30">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 h-16 flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <div className="relative" ref={menuRef}>
+              <button className="p-2 hover:bg-white/10 rounded-lg" onClick={()=>setMenuOpen(!menuOpen)}>{menuOpen?<IconX size={20}/>:<IconMenu size={20}/>}</button>
+              {menuOpen && (
+                <div className="absolute top-full left-0 mt-1 w-64 max-w-[calc(100vw-2rem)] max-h-[calc(100vh-5rem)] overflow-y-auto bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700 z-[100] overflow-x-hidden">
+                  <div className="bg-[#004030]/5 dark:bg-[#D8C3A5]/5 px-4 py-2 border-b border-slate-200 dark:border-slate-700"><p className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">{t.nav_modules}</p></div>
+                  {modulesList.map(m=>(
+                    <button key={m.id} onClick={()=>{setModule(m.id);setMenuOpen(false);}} className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium transition-colors text-left ${module===m.id?'bg-[#004030] text-white dark:bg-[#D8C3A5]/20 dark:text-[#D8C3A5] font-bold':'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50'}`}>
+                      <span className={module===m.id?'text-[#D8C3A5]':'opacity-50'}>{m.icon}</span><span className="truncate">{m.title}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+            <button onClick={()=>window.scrollTo({top:0,behavior:'smooth'})} className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+              <div className="font-serif font-black text-lg tracking-widest text-[#D8C3A5]">DCL</div>
+              <div className="hidden sm:block text-left"><h1 className="font-serif font-bold text-sm md:text-base leading-tight">{t.title}</h1><p className="text-[10px] text-[#D8C3A5]/70">{t.subtitle}</p></div>
+            </button>
+          </div>
+          <div className="flex items-center space-x-1">
+            <div className="flex items-center space-x-1 mr-2">
+              {ttsState!=='playing'?(<button onClick={()=>handleTTS('play')} title={t.audio_read} className="p-2 rounded-full hover:bg-white/10 transition-colors flex items-center space-x-1 text-xs"><IconPlay size={14}/><span className="hidden md:inline">{t.audio_read}</span></button>):(<button onClick={()=>handleTTS('pause')} className="p-2 rounded-full hover:bg-white/10 transition-colors"><IconPause size={14}/></button>)}
+              {ttsState!=='idle'&&<button onClick={()=>handleTTS('stop')} className="p-2 rounded-full hover:bg-white/10 transition-colors"><IconSquare size={14}/></button>}
+            </div>
+            <button onClick={()=>setLang(lang==='zh'?'en':'zh')} className="px-3 py-1 rounded-full bg-white/10 hover:bg-white/20 text-sm font-bold transition-colors">{lang==='zh'?'EN':'中文'}</button>
+            <button onClick={()=>setIsDark(!isDark)} className="p-2 rounded-full hover:bg-white/10 transition-colors">{isDark?<IconSun size={18}/>:<IconMoon size={18}/>}</button>
+          </div>
+        </div>
+      </header>
+      <div className="max-w-7xl mx-auto w-full px-3 sm:px-4 lg:px-6 flex-1 flex flex-col md:flex-row gap-0 py-6">
+        <aside className="hidden md:block w-64 shrink-0 mr-6">
+          <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden sticky top-24">
+            <div className="bg-[#004030]/5 dark:bg-[#D8C3A5]/5 px-4 py-3 border-b border-slate-200 dark:border-slate-700"><p className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">{t.nav_modules}</p></div>
+            <nav className="space-y-0.5 p-2">{modulesList.map(m=>(
+              <button key={m.id} onClick={()=>{setModule(m.id);setMenuOpen(false);}} className={`w-full flex items-center px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-left ${module===m.id?'bg-[#004030] dark:bg-[#D8C3A5]/20 text-white dark:text-[#D8C3A5] border border-[#D8C3A5]/30':'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700/50'}`}>
+                <span className={`mr-2.5 ${module===m.id?'text-[#D8C3A5]':'opacity-50'}`}>{m.icon}</span><span className="truncate">{m.title}</span>
+                {module===m.id&&<IconChevronRight size={14} className="ml-auto opacity-50 shrink-0"/>}
+              </button>
+            ))}</nav>
+          </div>
+        </aside>
+        <main ref={contentRef} className="flex-1 min-w-0" onClick={handleClick}>
+          <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-4 sm:p-6 md:p-8">{renderContent()}</div>
+        </main>
+      </div>
+      <footer className="bg-[#004030] dark:bg-slate-950 text-slate-300 dark:text-slate-400 border-t border-[#D8C3A5]">
+        <div className="max-w-7xl mx-auto px-4 h-8 flex justify-between items-center text-[10px] sm:text-xs">
+          <div className="flex items-center space-x-2 md:space-x-4">
+            <div className="font-serif font-black text-[#D8C3A5] hidden sm:block tracking-widest text-sm">DCL</div>
+            <span className="truncate">{t.copyright} · {t.date}</span>
+          </div>
+          <div className="flex items-center space-x-3 md:space-x-4">
+            <span className="text-[#D8C3A5]/70 font-serif hidden sm:inline">Architect:&nbsp;<a href={t.architect_url} target="_blank" rel="noopener noreferrer" className="text-[#D8C3A5] hover:text-white underline underline-offset-2 transition-colors">Prof. Shihmin Lo</a></span>
+            <button onClick={()=>window.scrollTo({top:0,behavior:'smooth'})} className="flex items-center uppercase tracking-widest hover:text-white transition-colors border-l border-slate-600 pl-3"><IconChevronUp size={12} className="md:mr-1"/><span className="hidden sm:inline">TOP</span></button>
+          </div>
+        </div>
+      </footer>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>
