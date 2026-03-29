@@ -50,7 +50,7 @@ const dict = {
     analytics_name: "姓名", analytics_name_ph: "例：Jimmy Lo",
     analytics_export_csv: "匯出 CSV 歷程記錄",
     analytics_fill_required: "請填寫完整資訊以解鎖匯出",
-    group_options: ["G1","G2","G3","G4","G5","Others"],
+    group_options: ["G1","G2","G3","G4","G5","G6","G7","G8","G9","G10","G11","G12","Others"],
     analytics_total_time: "總學習時間", analytics_total_clicks: "總互動點擊",
     analytics_overall_acc: "總體測驗答對率",
     analytics_module: "模組", analytics_time: "停留時間",
@@ -253,7 +253,7 @@ const dict = {
     analytics_name: "Name", analytics_name_ph: "e.g., Jimmy Lo",
     analytics_export_csv: "Export CSV Record",
     analytics_fill_required: "Complete all fields to unlock export",
-    group_options: ["G1","G2","G3","G4","G5","Others"],
+    group_options: ["G1","G2","G3","G4","G5","G6","G7","G8","G9","G10","G11","G12","Others"],
     analytics_total_time: "Total Study Time", analytics_total_clicks: "Total Interactions",
     analytics_overall_acc: "Overall Quiz Accuracy",
     analytics_module: "Module", analytics_time: "Time Spent",
@@ -756,6 +756,7 @@ function App() {
         </div>
         <div className="mt-8"><h3 className="text-sm font-bold uppercase tracking-wider text-slate-500 mb-4">{t.key_terms}</h3>
         <div key={`terms-${module}`} className="grid grid-cols-1 md:grid-cols-3 gap-4">{t[`${mk}_terms`].map((term,i)=><FlipCard key={i} front={term.front} back={term.back} t={t}/>)}</div></div>
+        {/* ModuleQuiz 元件會因為這裡設定的 key={`quiz-${module}`} 在切換分頁時重新建立，確保前一次的答案和狀態不會帶入。 */}
         <ModuleQuiz key={`quiz-${module}`} questions={t[`${mk}_q`]} t={t} moduleId={num} onQuizSubmit={handleQuizSubmit}/>
         {renderNavBottom()}
       </div>
