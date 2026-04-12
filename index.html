@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>動態能力與組織學習：互動學習</title>
 <script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Merriweather:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
 <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
 <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
@@ -26,7 +27,91 @@ tailwind.config = {
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
 .dark ::-webkit-scrollbar-thumb { background: #475569; }
+
+/* 版權提示彈窗動畫 */
+@keyframes popIn { 0% { opacity: 0; transform: translate(-50%, -40%); } 100% { opacity: 1; transform: translate(-50%, -50%); } }
+.copyright-modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: #004438; color: #E3B152; padding: 15px 30px; border-radius: 8px; font-family: 'Merriweather', serif; font-weight: bold; font-size: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); z-index: 99999; pointer-events: none; animation: popIn 0.3s ease-out forwards; transition: opacity 0.3s ease-out; }
 </style>
+
+<!-- 前端防禦腳本 (SPA Skill Myself 0412a版規範) -->
+<script>
+  // 1. 防框架嵌入 (Iframe Busting)
+  if (window.top !== window.self) {
+    window.top.location = window.self.location;
+  }
+
+  // 2. 網域白名單綁定 (Domain Lock)
+  const allowedDomains = ['localhost', '127.0.0.1', 'lolopodcast.github.io', ''];
+  const hostname = window.location.hostname;
+  const isPreviewSandbox = hostname.includes('sandbox') || hostname.includes('preview') || hostname.includes('googleusercontent') || hostname.includes('cdpn.io');
+  
+  if (!allowedDomains.includes(hostname) && !isPreviewSandbox) {
+    window.location.href = 'https://www.ibs.ncnu.edu.tw/index.php/faculty/tenured-professor/299-smlo';
+  }
+
+  // 3. 智慧型版權提示 Modal
+  function showCopyrightMsg() {
+    let modal = document.getElementById('copyright-msg-modal');
+    if (!modal) {
+      modal = document.createElement('div');
+      modal.id = 'copyright-msg-modal';
+      modal.className = 'copyright-modal';
+      modal.innerText = 'Intellectual Property of Prof. Shihmin Lo';
+      document.body.appendChild(modal);
+    }
+    
+    // 強制重置動畫與狀態
+    modal.style.animation = 'none';
+    modal.offsetHeight; // 觸發重繪
+    modal.style.animation = 'popIn 0.3s ease-out forwards';
+    modal.style.opacity = '1';
+    
+    if(window.copyrightTimer) clearTimeout(window.copyrightTimer);
+    window.copyrightTimer = setTimeout(() => {
+      let currentModal = document.getElementById('copyright-msg-modal');
+      if(currentModal) {
+        currentModal.style.animation = 'none'; // 解除 animation 鎖定以允許 transition
+        currentModal.style.opacity = '0';      // 觸發淡出
+        // 淡出後徹底移除 DOM 節點
+        setTimeout(() => {
+          if (currentModal.parentNode) currentModal.parentNode.removeChild(currentModal);
+        }, 300);
+      }
+    }, 2000); // 停留時間 2 秒
+  }
+
+  // 4. 智慧型右鍵與拖曳防護
+  document.addEventListener('DOMContentLoaded', () => {
+    // 攔截拖曳
+    document.addEventListener('dragstart', (e) => {
+      if (e.target.tagName.toLowerCase() === 'img' || e.target.tagName.toLowerCase() === 'svg') {
+        e.preventDefault();
+      }
+    });
+
+    // 智慧型右鍵判斷
+    document.addEventListener('contextmenu', (e) => {
+      const selection = window.getSelection().toString();
+      // 如果沒有選取文字，或是點擊在圖片/圖示上，就阻擋右鍵並顯示版權
+      if (selection.length === 0 || e.target.tagName.toLowerCase() === 'img' || e.target.tagName.toLowerCase() === 'svg') {
+        e.preventDefault();
+        showCopyrightMsg();
+      }
+    });
+
+    // 5. 攔截開發者工具快捷鍵 (豁免 Ctrl+P, Ctrl+S)
+    document.addEventListener('keydown', (e) => {
+      // F12
+      if (e.key === 'F12') { e.preventDefault(); showCopyrightMsg(); }
+      // Ctrl+U
+      if (e.ctrlKey && e.key.toLowerCase() === 'u') { e.preventDefault(); showCopyrightMsg(); }
+      // Ctrl+Shift+I / J / C
+      if (e.ctrlKey && e.shiftKey && ['i', 'j', 'c'].includes(e.key.toLowerCase())) {
+        e.preventDefault(); showCopyrightMsg();
+      }
+    });
+  });
+</script>
 </head>
 <body>
 <div id="root"></div>
@@ -57,7 +142,7 @@ const dict = {
     analytics_clicks: "點擊次數", analytics_acc: "答對率",
     analytics_correct_ans_total: "答對 / 已填答 / 總題數",
     analytics_no_data: "尚未測驗", analytics_sec: "秒", analytics_times: "次",
-    date: "Version 2026.03.26", copyright: "For Educational Use Only",
+    date: "Version 2026.04.12", copyright: "For Educational Use Only",
     architect_label: "Architect:", architect_name: "Prof. Shihmin Lo",
     architect_url: "https://www.ibs.ncnu.edu.tw/index.php/faculty/tenured-professor/299-smlo",
 
@@ -163,7 +248,7 @@ const dict = {
       { q: "Teece 3P 框架中，Path 指的是什麼？", opts: ["企業目前的資源配置","未來的策略選項","過去決策形成的路徑依賴","組織流程效率"], ans: 2, exp: "Path（路徑）指過去的投資、組織慣例與決策所形成的路徑依賴，限定了企業未來可選擇的策略方向。" },
       { q: "感知—捕獲—轉型中，「感知」的核心活動是？", opts: ["投資新產能","掃描環境、辨識機會與威脅","重組組織結構","設計商業模式"], ans: 1, exp: "感知（Sensing）的核心是掃描技術、市場、競爭環境的變化，及早辨識新興機會與潛在威脅。" },
       { q: "核心能耐的三個特性不包括下列何者？", opts: ["進入多元市場的潛力","對顧客價值的貢獻","容易被模仿","競爭者難以模仿"], ans: 2, exp: "Prahalad & Hamel 指出核心能耐的三特性：提供進入多元市場的潛力、顯著貢獻顧客價值、競爭者難以模仿。" },
-      { q: "互補資產的概念對創新者的啟示是什麼？", opts: ["只需關注技術研發","必須掌控商業化所需的配套資源","互補資產不重要","外包所有互補資產"], ans: 1, exp: "Teece 指出，若創新者不掌控互補資產（製造、行銷等），創新的利潤可能被擁有這些資產的追隨者攫取。" },
+      { q: "互補資產的概念對創新者的啟示是什麼？", opts: ["只需關注技術研發","必須掌控商業化所需的配套資源","互補資產不重要","外包所有互補資產"], ans: 1, exp: "Teece 指出，若創新者不掌控互補資產（製造、行銷等），創創的利潤可能被擁有這些資產的追隨者攫取。" },
       { q: "台積電的 OIP 平台屬於動態能力框架中的哪個環節？", opts: ["感知","捕獲","轉型","路徑"], ans: 1, exp: "OIP 整合 EDA、IP 等互補資產，降低客戶設計門檻，是台積電捕獲（Seizing）市場機會的關鍵機制。" },
       { q: "動態能力與一般營運能力的差異是什麼？", opts: ["動態能力是日常運作能力","動態能力是改變營運能力的更高階能力","兩者相同","營運能力層級更高"], ans: 1, exp: "動態能力是「改變的能力」——改變、更新與重組一般營運能力的更高階能力，而非日常運作本身。" },
       { q: "台積電加速 7nm/5nm 製程開發的觸發因素是什麼？", opts: ["政府補貼","感知到 AI 晶片的爆發性需求","客戶要求降價","競爭者退出市場"], ans: 1, exp: "台積電 2016 年率先感知到 AI 運算對先進製程的巨大需求，加速開發 7nm 與 5nm 製程因應。" }
@@ -260,7 +345,7 @@ const dict = {
     analytics_clicks: "Clicks", analytics_acc: "Accuracy",
     analytics_correct_ans_total: "Correct / Answered / Total",
     analytics_no_data: "Not taken", analytics_sec: "s", analytics_times: "x",
-    date: "Version 2026.03.26", copyright: "For Educational Use Only",
+    date: "Version 2026.04.12", copyright: "For Educational Use Only",
     architect_label: "Architect:", architect_name: "Prof. Shihmin Lo",
     architect_url: "https://www.ibs.ncnu.edu.tw/index.php/faculty/tenured-professor/299-smlo",
 
@@ -442,28 +527,28 @@ const dict = {
   }
 };
 
-// === SVG Icons ===
-const IconBookOpen = ({size=24,className=""}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>;
-const IconGlobe = ({size=24,className=""}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>;
-const IconChevronRight = ({size=24,className=""}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="9 18 15 12 9 6"/></svg>;
-const IconChevronUp = ({size=24,className=""}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="18 15 12 9 6 15"/></svg>;
-const IconMenu = ({size=24,className=""}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>;
-const IconX = ({size=24,className=""}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>;
-const IconMoon = ({size=24,className=""}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>;
-const IconSun = ({size=24,className=""}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>;
-const IconPlay = ({size=24,className=""}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polygon points="5 3 19 12 5 21 5 3"/></svg>;
-const IconPause = ({size=24,className=""}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>;
-const IconSquare = ({size=24,className=""}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/></svg>;
-const IconArrowRight = ({size=24,className=""}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>;
-const IconExternalLink = ({size=24,className=""}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>;
-const IconBarChart2 = ({size=24,className=""}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>;
-const IconFlag = ({size=24,className=""}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>;
-const IconLayers = ({size=24,className=""}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>;
-const IconTrendingUp = ({size=24,className=""}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>;
-const IconZap = ({size=24,className=""}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>;
-const IconTarget = ({size=24,className=""}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>;
-const IconCpu = ({size=24,className=""}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect x="4" y="4" width="16" height="16" rx="2" ry="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/></svg>;
-const IconZapLab = ({size=24,className=""}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M9 3h6v5l3 3-3 3v5H9v-5l-3-3 3-3z"/></svg>;
+// === SVG Icons (Added draggable="false") ===
+const IconBookOpen = ({size=24,className=""}) => <svg draggable="false" xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>;
+const IconGlobe = ({size=24,className=""}) => <svg draggable="false" xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>;
+const IconChevronRight = ({size=24,className=""}) => <svg draggable="false" xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="9 18 15 12 9 6"/></svg>;
+const IconChevronUp = ({size=24,className=""}) => <svg draggable="false" xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="18 15 12 9 6 15"/></svg>;
+const IconMenu = ({size=24,className=""}) => <svg draggable="false" xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>;
+const IconX = ({size=24,className=""}) => <svg draggable="false" xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>;
+const IconMoon = ({size=24,className=""}) => <svg draggable="false" xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>;
+const IconSun = ({size=24,className=""}) => <svg draggable="false" xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>;
+const IconPlay = ({size=24,className=""}) => <svg draggable="false" xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polygon points="5 3 19 12 5 21 5 3"/></svg>;
+const IconPause = ({size=24,className=""}) => <svg draggable="false" xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>;
+const IconSquare = ({size=24,className=""}) => <svg draggable="false" xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/></svg>;
+const IconArrowRight = ({size=24,className=""}) => <svg draggable="false" xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>;
+const IconExternalLink = ({size=24,className=""}) => <svg draggable="false" xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>;
+const IconBarChart2 = ({size=24,className=""}) => <svg draggable="false" xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>;
+const IconFlag = ({size=24,className=""}) => <svg draggable="false" xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>;
+const IconLayers = ({size=24,className=""}) => <svg draggable="false" xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>;
+const IconTrendingUp = ({size=24,className=""}) => <svg draggable="false" xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>;
+const IconZap = ({size=24,className=""}) => <svg draggable="false" xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>;
+const IconTarget = ({size=24,className=""}) => <svg draggable="false" xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>;
+const IconCpu = ({size=24,className=""}) => <svg draggable="false" xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect x="4" y="4" width="16" height="16" rx="2" ry="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/></svg>;
+const IconZapLab = ({size=24,className=""}) => <svg draggable="false" xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M9 3h6v5l3 3-3 3v5H9v-5l-3-3 3-3z"/></svg>;
 
 const TOTAL = 9;
 const N = 5;
@@ -471,7 +556,7 @@ const N = 5;
 const FlipCard = ({ front, back, t }) => {
   const [flipped, setFlipped] = useState(false);
   return (
-    <div className="perspective cursor-pointer h-36" onClick={() => setFlipped(!flipped)}>
+    <div className="perspective cursor-pointer h-36 select-none" onClick={() => setFlipped(!flipped)}>
       <div className={`transform-style-3d relative w-full h-full transition-transform duration-500 ${flipped ? 'rotate-y-180' : ''}`}>
         <div className="backface-hidden absolute inset-0 bg-white dark:bg-slate-800 rounded-xl p-4 flex flex-col items-center justify-center border border-slate-200 dark:border-slate-700 shadow-sm">
           <p className="font-serif font-bold text-center text-[#004030] dark:text-[#D8C3A5] text-sm">{front}</p>
@@ -497,7 +582,7 @@ const ModuleQuiz = ({ questions, t, moduleId, onQuizSubmit }) => {
   };
   const correctCount = submitted ? quizIndices.filter((qIdx, i) => selected[i] === questions[qIdx].ans).length : 0;
   return (
-    <div className="mt-8 bg-slate-50 dark:bg-slate-900 rounded-2xl p-4 sm:p-6 border border-slate-200 dark:border-slate-700">
+    <div className="mt-8 bg-slate-50 dark:bg-slate-900 rounded-2xl p-4 sm:p-6 border border-slate-200 dark:border-slate-700 select-none">
       <h3 className="font-serif font-bold text-xl text-[#004030] dark:text-[#D8C3A5] mb-6 flex items-center"><IconBookOpen size={20} className="mr-2"/>{t.quiz_title}</h3>
       {quizIndices.map((qIdx, qi) => {
         const q = questions[qIdx];
@@ -530,7 +615,7 @@ const ModuleQuiz = ({ questions, t, moduleId, onQuizSubmit }) => {
 };
 
 const LinkCard = ({label, url, desc}) => (
-  <a href={url} target="_blank" rel="noopener noreferrer" className="block bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700 hover:border-[#004030] dark:hover:border-[#D8C3A5] hover:shadow-md transition-all group">
+  <a href={url} target="_blank" rel="noopener noreferrer" className="block bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700 hover:border-[#004030] dark:hover:border-[#D8C3A5] hover:shadow-md transition-all group select-none">
     <div className="flex items-start justify-between gap-2 mb-2">
       <span className="font-bold font-serif text-sm text-[#004030] dark:text-[#D8C3A5] group-hover:underline leading-snug">{label}</span>
       <IconExternalLink size={14} className="shrink-0 mt-1 opacity-40 group-hover:opacity-100"/>
@@ -548,7 +633,7 @@ const LifecycleLab = ({lang}) => {
   const s = stages[stage];
   const curve = [10,45,80,60];
   return (
-    <div className="bg-white dark:bg-slate-800 rounded-xl p-6 border border-slate-200 dark:border-slate-700">
+    <div className="bg-white dark:bg-slate-800 rounded-xl p-6 border border-slate-200 dark:border-slate-700 select-none">
       <h4 className="font-serif font-bold text-lg text-[#004030] dark:text-[#D8C3A5] mb-4">{lang==='zh'?'產業生命週期探索器':'Industry Life Cycle Explorer'}</h4>
       <div className="flex justify-between mb-4">{stages.map((st,i)=>(
         <button key={i} onClick={()=>setStage(i)} className={`px-2 py-1 text-xs rounded-full transition-colors ${stage===i?'bg-[#004030] text-white dark:bg-[#D8C3A5] dark:text-[#004030]':'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-400'}`}>{st.n}</button>
@@ -574,7 +659,7 @@ const DynamicCapLab = ({lang}) => {
   const dcIndex = Math.round((sensing*0.35+seizing*0.35+transforming*0.3));
   const level = dcIndex>=75?(lang==='zh'?'卓越 — 持續領先':'Excellent — Sustained Leadership'):dcIndex>=50?(lang==='zh'?'良好 — 具適應力':'Good — Adaptive'):dcIndex>=25?(lang==='zh'?'待強化 — 易受衝擊':'Needs Strengthening'):(lang==='zh'?'危險 — 高度僵化':'Critical — Highly Rigid');
   return (
-    <div className="bg-white dark:bg-slate-800 rounded-xl p-6 border border-slate-200 dark:border-slate-700">
+    <div className="bg-white dark:bg-slate-800 rounded-xl p-6 border border-slate-200 dark:border-slate-700 select-none">
       <h4 className="font-serif font-bold text-lg text-[#004030] dark:text-[#D8C3A5] mb-4">{lang==='zh'?'動態能力評估器':'Dynamic Capability Assessor'}</h4>
       <div className="space-y-4">
         <div><label className="text-sm font-bold">{lang==='zh'?'感知能力 Sensing':'Sensing Capability'}: {sensing}%</label>
@@ -599,7 +684,7 @@ const SECILab = ({lang}) => {
     : [{n:'Socialization',from:'Tacit',to:'Tacit',ex:'Apprenticeship, on-site observation, shared experience',color:'bg-blue-500'},{n:'Externalization',from:'Tacit',to:'Explicit',ex:'Metaphor, conceptualization, model-building, dialogue',color:'bg-green-500'},{n:'Combination',from:'Explicit',to:'Explicit',ex:'Database integration, report compilation, knowledge systems',color:'bg-yellow-500'},{n:'Internalization',from:'Explicit',to:'Tacit',ex:'Learning-by-doing, simulation training, hands-on practice',color:'bg-red-500'}];
   const m = modes[mode];
   return (
-    <div className="bg-white dark:bg-slate-800 rounded-xl p-6 border border-slate-200 dark:border-slate-700">
+    <div className="bg-white dark:bg-slate-800 rounded-xl p-6 border border-slate-200 dark:border-slate-700 select-none">
       <h4 className="font-serif font-bold text-lg text-[#004030] dark:text-[#D8C3A5] mb-4">{lang==='zh'?'SECI 知識轉化探索器':'SECI Knowledge Conversion Explorer'}</h4>
       <div className="grid grid-cols-2 gap-2 mb-4">{modes.map((md,i)=>(
         <button key={i} onClick={()=>setMode(i)} className={`px-3 py-2 rounded-lg text-sm font-bold transition-colors ${mode===i?'bg-[#004030] text-white dark:bg-[#D8C3A5] dark:text-[#004030]':'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400'}`}>{md.n}</button>
@@ -622,7 +707,7 @@ const AmbidexterityLab = ({lang}) => {
   const balance = 100 - Math.abs(explore - exploit);
   const status = balance >= 80 ? (lang==='zh'?'高度雙元 — 最佳平衡':'Highly Ambidextrous — Optimal Balance') : balance >= 50 ? (lang==='zh'?'中度雙元 — 尚可':'Moderately Ambidextrous') : explore > exploit ? (lang==='zh'?'過度探索 — 資源耗散風險':'Over-Exploring — Resource Dissipation Risk') : (lang==='zh'?'過度利用 — 能力陷阱風險':'Over-Exploiting — Competency Trap Risk');
   return (
-    <div className="bg-white dark:bg-slate-800 rounded-xl p-6 border border-slate-200 dark:border-slate-700">
+    <div className="bg-white dark:bg-slate-800 rounded-xl p-6 border border-slate-200 dark:border-slate-700 select-none">
       <h4 className="font-serif font-bold text-lg text-[#004030] dark:text-[#D8C3A5] mb-4">{lang==='zh'?'組織雙元性模擬器':'Ambidexterity Simulator'}</h4>
       <div className="mb-4">
         <label className="text-sm font-bold">{lang==='zh'?'探索 ← → 利用':'Explore ← → Exploit'}</label>
@@ -702,12 +787,26 @@ function App() {
   };
 
   const handleExportCSV = () => {
+    // 實作 DOMPurify 內容淨化防禦
+    const safeGroup = window.DOMPurify.sanitize(studentInfo.group);
+    const safeDept = window.DOMPurify.sanitize(studentInfo.dept);
+    const safeId = window.DOMPurify.sanitize(studentInfo.id);
+    const safeName = window.DOMPurify.sanitize(studentInfo.name);
+
     const BOM = '\uFEFF';
     const mNavKeys = ['m1_nav','m2_nav','m3_nav','m4_nav','m5_nav'];
-    const rows = [[t.analytics_group,t.analytics_dept,t.analytics_id,t.analytics_name],[studentInfo.group,studentInfo.dept,studentInfo.id,studentInfo.name],[],[t.analytics_module,t.analytics_time,t.analytics_clicks,t.analytics_acc,t.analytics_correct_ans_total],
+    const rows = [[t.analytics_group,t.analytics_dept,t.analytics_id,t.analytics_name],[safeGroup,safeDept,safeId,safeName],[],[t.analytics_module,t.analytics_time,t.analytics_clicks,t.analytics_acc,t.analytics_correct_ans_total],
       ...Array.from({length:N},(_,i)=>{const acc=analytics.quizTotal[i]>0?Math.round(analytics.quizCorrect[i]/analytics.quizTotal[i]*100)+'%':t.analytics_no_data;const ans=analytics.quizTotal[i]>0?`${analytics.quizCorrect[i]}/${analytics.quizTotal[i]}/8`:t.analytics_no_data;return[t[mNavKeys[i]],analytics.time[i]+t.analytics_sec,analytics.clicks[i]+t.analytics_times,acc,ans];})];
     const csv = BOM + rows.map(r=>r.join(',')).join('\n');
-    const a = document.createElement('a'); a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv); a.download='learning_analytics.csv'; a.click();
+    
+    // 依照規範產生檔名：品牌_主標題_組別_學號_姓名_日期
+    const dateStr = new Date().toISOString().split('T')[0].replace(/-/g, '');
+    const filename = `${t.brand}_${t.title}_${safeGroup}_${safeId}_${safeName}_${dateStr}.csv`;
+    
+    const a = document.createElement('a'); 
+    a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv); 
+    a.download = filename; 
+    a.click();
   };
 
   const modulesList = [
@@ -723,7 +822,7 @@ function App() {
   ];
 
   const renderNavBottom = () => (
-    <div className="mt-12 flex justify-between items-center pt-8 border-t border-slate-300 dark:border-slate-700">
+    <div className="mt-12 flex justify-between items-center pt-8 border-t border-slate-300 dark:border-slate-700 select-none">
       <button onClick={()=>setModule(Math.max(0,module-1))} disabled={module===0} className="px-6 py-3 font-serif font-bold text-slate-500 hover:text-[#004030] dark:hover:text-[#D8C3A5] disabled:opacity-0 transition-colors flex items-center uppercase text-sm tracking-wider">← {t.nav_prev}</button>
       <button onClick={()=>setModule(Math.min(TOTAL-1,module+1))} disabled={module===TOTAL-1} className="px-8 py-3 bg-[#004030] dark:bg-[#D8C3A5] text-white dark:text-[#004030] font-serif font-bold hover:bg-[#002b20] disabled:opacity-0 transition-colors flex items-center uppercase text-sm tracking-wider shadow-md">{t.nav_next} <IconArrowRight size={16} className="ml-2"/></button>
     </div>
@@ -754,7 +853,7 @@ function App() {
             <p className="text-sm font-bold text-[#D8C3A5]">{t[`${mk}_case_lesson`]}</p>
           </div>
         </div>
-        <div className="mt-8"><h3 className="text-sm font-bold uppercase tracking-wider text-slate-500 mb-4">{t.key_terms}</h3>
+        <div className="mt-8"><h3 className="text-sm font-bold uppercase tracking-wider text-slate-500 mb-4 select-none">{t.key_terms}</h3>
         <div key={`terms-${module}`} className="grid grid-cols-1 md:grid-cols-3 gap-4">{t[`${mk}_terms`].map((term,i)=><FlipCard key={i} front={term.front} back={term.back} t={t}/>)}</div></div>
         {/* ModuleQuiz 元件會因為這裡設定的 key={`quiz-${module}`} 在切換分頁時重新建立，確保前一次的答案和狀態不會帶入。 */}
         <ModuleQuiz key={`quiz-${module}`} questions={t[`${mk}_q`]} t={t} moduleId={num} onQuizSubmit={handleQuizSubmit}/>
@@ -783,15 +882,15 @@ function App() {
     return (
       <div className={`space-y-10 ${fade}`}>
         <H2>{t.m6_title}</H2>
-        <p className="text-slate-500 dark:text-slate-400">{t.m6_desc}</p>
+        <p className="text-slate-500 dark:text-slate-400 select-none">{t.m6_desc}</p>
         <div className="grid md:grid-cols-2 gap-3">{links.map((l,i)=><LinkCard key={i} {...l}/>)}</div>
         {otherLinks.map((sec,si)=>(
           <div key={si}>
-            <h3 className="flex items-center gap-2 text-base font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wide mb-3"><span>{sec.icon}</span>{sec.cat}</h3>
+            <h3 className="flex items-center gap-2 text-base font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wide mb-3 select-none"><span>{sec.icon}</span>{sec.cat}</h3>
             <div className="grid md:grid-cols-2 gap-3">{sec.items.map((l,i)=><LinkCard key={i} {...l}/>)}</div>
           </div>
         ))}
-        <div className="bg-[#004030]/5 dark:bg-[#D8C3A5]/5 rounded-xl p-5 border border-[#004030]/20 dark:border-[#D8C3A5]/20">
+        <div className="bg-[#004030]/5 dark:bg-[#D8C3A5]/5 rounded-xl p-5 border border-[#004030]/20 dark:border-[#D8C3A5]/20 select-none">
           <p className="text-sm text-slate-600 dark:text-slate-400">{lang==='zh'?'⚠️ 以上連結為外部資源，內容由原始作者維護，僅供學術參考之用。':'⚠️ External links maintained by original authors. For academic reference only.'}</p>
         </div>
         {renderNavBottom()}
@@ -802,7 +901,7 @@ function App() {
   const renderLab = () => (
     <div className={`space-y-8 ${fade}`}>
       <H2>{t.mlab_title}</H2>
-      <p className="text-slate-600 dark:text-slate-400">{t.mlab_desc}</p>
+      <p className="text-slate-600 dark:text-slate-400 select-none">{t.mlab_desc}</p>
       <LifecycleLab lang={lang}/>
       <div className="grid md:grid-cols-2 gap-6">
         <DynamicCapLab lang={lang}/>
@@ -817,31 +916,31 @@ function App() {
     if (module === 0) return (
       <div className={`space-y-8 text-lg leading-relaxed text-slate-700 dark:text-slate-300 ${fade}`}>
         <div className="bg-[#004030] dark:bg-slate-800 rounded-2xl p-6 sm:p-8 text-white">
-          <p className="text-xs font-bold uppercase tracking-widest text-[#D8C3A5] mb-3">{lang==='zh'?'課程簡介':'Course Introduction'}</p>
-          <h2 className="text-2xl sm:text-3xl md:text-4xl font-serif font-black text-white mb-4">{t.m0_title}</h2>
+          <p className="text-xs font-bold uppercase tracking-widest text-[#D8C3A5] mb-3 select-none">{lang==='zh'?'課程簡介':'Course Introduction'}</p>
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-serif font-black text-white mb-4 select-none">{t.m0_title}</h2>
           <p className="text-[#D8C3A5]/90 text-base leading-relaxed">{t.m0_intro}</p>
         </div>
         <div className="bg-white dark:bg-slate-800 rounded-xl p-6 border-l-4 border-[#D8C3A5] shadow-sm">
-          <h3 className="text-xl font-bold font-serif text-[#004030] dark:text-[#D8C3A5] mb-3">{t.m0_why}</h3>
+          <h3 className="text-xl font-bold font-serif text-[#004030] dark:text-[#D8C3A5] mb-3 select-none">{t.m0_why}</h3>
           <p className="text-base">{t.m0_why_desc}</p>
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">{t.m0_stats.map((s,i)=>(
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 select-none">{t.m0_stats.map((s,i)=>(
           <div key={i} className="bg-white dark:bg-slate-800 rounded-xl p-5 text-center shadow-sm border border-slate-200 dark:border-slate-700">
             <div className="text-2xl md:text-3xl font-black font-serif text-[#004030] dark:text-[#D8C3A5] mb-1">{s.val}</div>
             <div className="text-xs text-slate-500 dark:text-slate-400">{s.label}</div>
           </div>
         ))}</div>
         <div>
-          <h3 className="text-lg font-bold uppercase tracking-wider text-slate-500 mb-4">{lang==='zh'?'課程模組':'Course Modules'}</h3>
+          <h3 className="text-lg font-bold uppercase tracking-wider text-slate-500 mb-4 select-none">{lang==='zh'?'課程模組':'Course Modules'}</h3>
           <div className="space-y-3">{t.m0_modules.map((m,i)=>(
             <button key={i} onClick={()=>setModule(i+1)} className="w-full flex items-center gap-5 bg-white dark:bg-slate-800 rounded-xl px-6 py-4 border border-slate-200 dark:border-slate-700 hover:border-[#004030] dark:hover:border-[#D8C3A5] hover:shadow-md transition-all text-left group">
-              <div className="text-3xl font-black font-serif text-[#D8C3A5] w-10 shrink-0">{m.num}</div>
+              <div className="text-3xl font-black font-serif text-[#D8C3A5] w-10 shrink-0 select-none">{m.num}</div>
               <div className="flex-1"><div className="font-bold font-serif text-[#004030] dark:text-[#D8C3A5] mb-1">{m.title}</div><div className="text-sm text-slate-500">{m.desc}</div></div>
               <IconChevronRight size={20} className="text-slate-300 group-hover:text-[#004030] dark:group-hover:text-[#D8C3A5] shrink-0"/>
             </button>
           ))}</div>
         </div>
-        <div className="flex justify-end">
+        <div className="flex justify-end select-none">
           <button onClick={()=>setModule(1)} className="px-8 py-3 bg-[#004030] dark:bg-[#D8C3A5] text-white dark:text-[#004030] font-serif font-bold hover:bg-[#002b20] rounded-lg shadow-md">{t.m0_start}</button>
         </div>
       </div>
@@ -860,14 +959,14 @@ function App() {
       return (
         <div className={base}>
           <H2>{t.analytics_title}</H2>
-          <p className="text-slate-500 dark:text-slate-400">{t.analytics_desc}</p>
-          <div className="grid grid-cols-3 gap-4">{[{label:t.analytics_total_time,val:totalTime+t.analytics_sec},{label:t.analytics_total_clicks,val:totalClicks+t.analytics_times},{label:t.analytics_overall_acc,val:overallAcc}].map((s,i)=>(
+          <p className="text-slate-500 dark:text-slate-400 select-none">{t.analytics_desc}</p>
+          <div className="grid grid-cols-3 gap-4 select-none">{[{label:t.analytics_total_time,val:totalTime+t.analytics_sec},{label:t.analytics_total_clicks,val:totalClicks+t.analytics_times},{label:t.analytics_overall_acc,val:overallAcc}].map((s,i)=>(
             <div key={i} className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700 text-center shadow-sm">
               <p className="text-2xl font-black font-serif text-[#004030] dark:text-[#D8C3A5]">{s.val}</p>
               <p className="text-xs text-slate-500 mt-1">{s.label}</p>
             </div>
           ))}</div>
-          <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm">
+          <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm select-none">
             <table className="w-full text-sm"><thead><tr className="bg-[#004030] text-[#D8C3A5]">
               <th className="text-left p-3">{t.analytics_module}</th><th className="text-center p-3">{t.analytics_time}</th><th className="text-center p-3">{t.analytics_clicks}</th><th className="text-center p-3">{t.analytics_acc}</th><th className="text-center p-3 hidden md:table-cell">{t.analytics_correct_ans_total}</th>
             </tr></thead><tbody>{Array.from({length:N},(_,i)=>{
@@ -876,7 +975,7 @@ function App() {
               return <tr key={i} className="border-t border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/50"><td className="p-3 font-medium text-[#004030] dark:text-[#D8C3A5]">{t[mNavKeys[i]]}</td><td className="p-3 text-center">{analytics.time[i]}{t.analytics_sec}</td><td className="p-3 text-center">{analytics.clicks[i]}{t.analytics_times}</td><td className="p-3 text-center">{acc}</td><td className="p-3 text-center hidden md:table-cell">{ans}</td></tr>;
             })}</tbody></table>
           </div>
-          <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6 shadow-sm">
+          <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6 shadow-sm select-none">
             <h3 className="font-serif font-bold text-lg text-[#004030] dark:text-[#D8C3A5] mb-4">{t.analytics_form_title}</h3>
             <div className="grid grid-cols-2 gap-4">
               <div><label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">{t.analytics_group}</label>
@@ -898,7 +997,7 @@ function App() {
 
   return (
     <div className="min-h-screen bg-[#f4f4f4] dark:bg-[#121212] font-sans selection:bg-[#004030] selection:text-white dark:selection:bg-[#D8C3A5] dark:selection:text-[#004030] flex flex-col overflow-x-hidden pt-16">
-      <header className="fixed top-0 left-0 right-0 h-16 bg-[#004030] dark:bg-slate-900 text-white z-50 shadow-lg border-b border-[#D8C3A5]/30">
+      <header className="fixed top-0 left-0 right-0 h-16 bg-[#004030] dark:bg-slate-900 text-white z-50 shadow-lg border-b border-[#D8C3A5]/30 select-none">
         <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 h-16 flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <div className="relative" ref={menuRef}>
@@ -915,7 +1014,7 @@ function App() {
               )}
             </div>
             <button onClick={()=>window.scrollTo({top:0,behavior:'smooth'})} className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-              <div className="font-serif font-black text-lg tracking-widest text-[#D8C3A5]">DCL</div>
+              <div className="font-serif font-black text-lg tracking-widest text-[#D8C3A5]">{t.brand}</div>
               <div className="hidden sm:block text-left"><h1 className="font-serif font-bold text-sm md:text-base leading-tight">{t.title}</h1><p className="text-[10px] text-[#D8C3A5]/70">{t.subtitle}</p></div>
             </button>
           </div>
@@ -930,7 +1029,7 @@ function App() {
         </div>
       </header>
       <div className="max-w-7xl mx-auto w-full px-3 sm:px-4 lg:px-6 flex-1 flex flex-col md:flex-row gap-0 py-6">
-        <aside className="hidden md:block w-64 shrink-0 mr-6">
+        <aside className="hidden md:block w-64 shrink-0 mr-6 select-none">
           <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden sticky top-24">
             <div className="bg-[#004030]/5 dark:bg-[#D8C3A5]/5 px-4 py-3 border-b border-slate-200 dark:border-slate-700"><p className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">{t.nav_modules}</p></div>
             <nav className="space-y-0.5 p-2">{modulesList.map(m=>(
@@ -945,10 +1044,10 @@ function App() {
           <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-4 sm:p-6 md:p-8">{renderContent()}</div>
         </main>
       </div>
-      <footer className="bg-[#004030] dark:bg-slate-950 text-slate-300 dark:text-slate-400 border-t border-[#D8C3A5]">
+      <footer className="bg-[#004030] dark:bg-slate-950 text-slate-300 dark:text-slate-400 border-t border-[#D8C3A5] select-none">
         <div className="max-w-7xl mx-auto px-4 h-8 flex justify-between items-center text-[10px] sm:text-xs">
           <div className="flex items-center space-x-2 md:space-x-4">
-            <div className="font-serif font-black text-[#D8C3A5] hidden sm:block tracking-widest text-sm">DCL</div>
+            <div className="font-serif font-black text-[#D8C3A5] hidden sm:block tracking-widest text-sm">{t.brand}</div>
             <span className="truncate">{t.copyright} · {t.date}</span>
           </div>
           <div className="flex items-center space-x-3 md:space-x-4">
